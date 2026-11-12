@@ -5,126 +5,352 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>倉庫智慧派工管理系統</title>
+
 <style>
 :root {
-  --bg:#f4f6fa; --card:#fff; --text:#202938;
-  --muted:#8490a1; --primary:#315bea; --line:#e8edf3;
+  --bg:#f4f6fa;
+  --card:#fff;
+  --text:#202938;
+  --muted:#8490a1;
+  --primary:#315bea;
+  --line:#e8edf3;
 }
 * {box-sizing:border-box}
 body {
-  margin:0; font-family:Arial,"Microsoft JhengHei",sans-serif;
-  background:var(--bg); color:var(--text);
+  margin:0;
+  font-family:Arial,"Microsoft JhengHei",sans-serif;
+  background:var(--bg);
+  color:var(--text);
 }
 button,input,select,textarea {font:inherit}
 button {cursor:pointer}
 .app {display:flex;min-height:100vh}
 .sidebar {
-  width:230px;background:#17243a;color:white;
-  padding:25px 16px;flex-shrink:0;
+  width:230px;
+  background:#17243a;
+  color:white;
+  padding:25px 16px;
+  flex-shrink:0;
 }
-.brand {font-size:19px;font-weight:bold;margin:5px 8px 35px}
-.brand small {display:block;font-size:11px;color:#aebbd0;margin-top:7px;font-weight:normal}
+.brand {
+  font-size:19px;
+  font-weight:bold;
+  margin:5px 8px 35px;
+}
+.brand small {
+  display:block;
+  font-size:11px;
+  color:#aebbd0;
+  margin-top:7px;
+  font-weight:normal;
+}
 .nav-btn {
-  width:100%;border:0;background:transparent;color:#bdc8d8;
-  text-align:left;padding:13px 15px;border-radius:9px;
-  margin-bottom:7px;font-size:14px;
+  width:100%;
+  border:0;
+  background:transparent;
+  color:#bdc8d8;
+  text-align:left;
+  padding:13px 15px;
+  border-radius:9px;
+  margin-bottom:7px;
+  font-size:14px;
 }
-.nav-btn.active,.nav-btn:hover {background:#2c4163;color:white}
-.sidebar-foot {margin-top:40px;color:#94a4bb;font-size:12px;padding:10px}
-.main {flex:1;min-width:0;padding:28px 32px}
-.topbar {display:flex;justify-content:space-between;align-items:center;margin-bottom:26px;gap:12px}
+.nav-btn.active,.nav-btn:hover {
+  background:#2c4163;
+  color:white;
+}
+.sidebar-foot {
+  margin-top:40px;
+  color:#94a4bb;
+  font-size:12px;
+  padding:10px;
+}
+.main {
+  flex:1;
+  min-width:0;
+  padding:28px 32px;
+}
+.topbar {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:26px;
+  gap:12px;
+}
 h1 {font-size:25px;margin:0 0 7px}
 .subtitle {color:var(--muted);font-size:13px}
 .primary {
-  background:var(--primary);color:white;border:0;border-radius:9px;
-  padding:11px 17px;font-weight:bold;
+  background:var(--primary);
+  color:white;
+  border:0;
+  border-radius:9px;
+  padding:11px 17px;
+  font-weight:bold;
 }
 .primary:hover {background:#2449c8}
+.primary:disabled {opacity:.6;cursor:not-allowed}
 .secondary {
-  background:white;border:1px solid var(--line);border-radius:8px;
-  padding:9px 13px;color:var(--text);
+  background:white;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:9px 13px;
+  color:var(--text);
 }
-.stats {display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:22px}
+.stats {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:15px;
+  margin-bottom:22px;
+}
 .stat {
-  background:var(--card);border:1px solid var(--line);
-  border-radius:13px;padding:19px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:19px;
 }
 .stat-label {font-size:13px;color:var(--muted)}
-.stat-number {font-size:29px;font-weight:bold;margin:12px 0 4px}
+.stat-number {
+  font-size:29px;
+  font-weight:bold;
+  margin:12px 0 4px;
+}
 .stat-note {font-size:11px;color:var(--muted)}
 .panel {
-  background:white;border:1px solid var(--line);
-  border-radius:13px;padding:20px;margin-bottom:20px;
+  background:white;
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:20px;
+  margin-bottom:20px;
 }
-.panel-head {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:17px}
+.panel-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:17px;
+}
 .panel-head h2 {font-size:17px;margin:0}
 .task-row {
-  display:grid;grid-template-columns:1.2fr 1fr 1fr auto;
-  align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line);
+  display:grid;
+  grid-template-columns:1.2fr 1fr 1fr auto;
+  align-items:center;
+  gap:12px;
+  padding:14px 0;
+  border-top:1px solid var(--line);
 }
 .task-name {font-weight:bold;font-size:14px}
-.task-sub {font-size:12px;color:var(--muted);margin-top:5px}
+.task-sub {
+  font-size:12px;
+  color:var(--muted);
+  margin-top:5px;
+  line-height:1.5;
+}
 .status {
-  display:inline-block;border-radius:20px;padding:5px 10px;
-  font-size:11px;white-space:nowrap;
+  display:inline-block;
+  border-radius:20px;
+  padding:5px 10px;
+  font-size:11px;
+  white-space:nowrap;
 }
 .s-pending {background:#fff2d9;color:#a36a00}
 .s-confirm {background:#fce8e8;color:#c43c3c}
 .s-progress {background:#e7efff;color:#315bea}
 .s-done {background:#e1f5e9;color:#21834c}
 .s-cancel {background:#eceef1;color:#727b88}
-.toolbar {display:flex;flex-wrap:wrap;gap:9px;margin-bottom:15px}
+.toolbar {
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px;
+  margin-bottom:15px;
+}
 .toolbar input,.toolbar select {
-  border:1px solid var(--line);background:white;border-radius:8px;
-  padding:10px;min-width:150px;
+  border:1px solid var(--line);
+  background:white;
+  border-radius:8px;
+  padding:10px;
+  min-width:150px;
 }
-.calendar-head {display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.calendar-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:16px;
+}
 .calendar-title {font-size:18px;font-weight:bold}
-.calendar-grid {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
-.weekday {text-align:center;color:var(--muted);font-size:12px;padding:10px 0}
-.day {
-  background:#fff;border:1px solid var(--line);border-radius:8px;
-  min-height:105px;padding:8px;cursor:pointer;overflow:hidden;
+.calendar-grid {
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:5px;
 }
-.day:hover,.day.selected {border:2px solid var(--primary);padding:7px}
+.weekday {
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  padding:10px 0;
+}
+.day {
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:8px;
+  min-height:105px;
+  padding:8px;
+  cursor:pointer;
+  overflow:hidden;
+}
+.day:hover,.day.selected {
+  border:2px solid var(--primary);
+  padding:7px;
+}
 .day.other {background:#f8f9fb;color:#b7bfca}
 .day.today {background:#eef3ff}
 .day-num {font-size:13px;font-weight:bold}
 .day-task {
-  margin-top:6px;border-radius:4px;padding:4px;
-  font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  background:#e7efff;color:#315bea;
+  margin-top:6px;
+  border-radius:4px;
+  padding:4px;
+  font-size:10px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  background:#e7efff;
+  color:#315bea;
 }
 .day-task.done {background:#e1f5e9;color:#21834c}
 .day-task.confirm {background:#fce8e8;color:#c43c3c}
 .day-task.pending {background:#fff2d9;color:#a36a00}
-.empty {padding:25px;text-align:center;color:var(--muted);font-size:13px}
+.empty {
+  padding:25px;
+  text-align:center;
+  color:var(--muted);
+  font-size:13px;
+}
 .page {display:none}
 .page.active {display:block}
 .modal-bg {
-  display:none;position:fixed;inset:0;background:#17243a88;
-  z-index:10;align-items:center;justify-content:center;padding:15px;
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#17243a88;
+  z-index:10;
+  align-items:center;
+  justify-content:center;
+  padding:15px;
 }
 .modal-bg.show {display:flex}
 .modal {
-  width:100%;max-width:510px;max-height:90vh;overflow:auto;
-  background:white;border-radius:15px;padding:23px;
+  width:100%;
+  max-width:510px;
+  max-height:90vh;
+  overflow:auto;
+  background:white;
+  border-radius:15px;
+  padding:23px;
 }
 .modal h2 {margin:0 0 18px;font-size:19px}
-.form-grid {display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.field {display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.form-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:13px;
+}
+.field {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-bottom:12px;
+}
 .field.full {grid-column:1/-1}
 .field label {font-size:12px;color:#667085}
 .field input,.field select,.field textarea {
-  border:1px solid var(--line);border-radius:8px;padding:10px;width:100%;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:10px;
+  width:100%;
 }
 .field textarea {min-height:65px;resize:vertical}
-.modal-actions {display:flex;justify-content:flex-end;gap:9px;margin-top:15px}
-.action-btn {border:0;background:transparent;color:var(--primary);font-size:12px}
-.footer-note {color:var(--muted);font-size:11px;text-align:center;padding:15px}
+.modal-actions {
+  display:flex;
+  justify-content:flex-end;
+  gap:9px;
+  margin-top:15px;
+}
+.action-btn {
+  border:0;
+  background:transparent;
+  color:var(--primary);
+  font-size:12px;
+}
+.footer-note {
+  color:var(--muted);
+  font-size:11px;
+  text-align:center;
+  padding:15px;
+}
+.login-overlay {
+  position:fixed;
+  inset:0;
+  z-index:100;
+  background:#17243a;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.login-card {
+  width:100%;
+  max-width:390px;
+  background:white;
+  border-radius:16px;
+  padding:28px;
+  box-shadow:0 20px 60px #0003;
+}
+.login-card h2 {margin:0 0 8px;color:#202938}
+.login-card p {
+  margin:0 0 22px;
+  color:#8490a1;
+  font-size:13px;
+}
+.login-card label {
+  display:block;
+  font-size:13px;
+  margin:12px 0 6px;
+}
+.login-card input {
+  width:100%;
+  padding:12px;
+  border:1px solid #e8edf3;
+  border-radius:8px;
+}
+.login-card button {
+  width:100%;
+  margin-top:18px;
+}
+.login-error {
+  color:#c43c3c;
+  font-size:12px;
+  margin-top:12px;
+  white-space:pre-wrap;
+}
+.connection {
+  font-size:12px;
+  color:#8490a1;
+}
+.original-message {
+  margin-top:8px;
+  padding:8px;
+  background:#f7f8fa;
+  border-radius:6px;
+  color:#667085;
+  font-size:11px;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
 @media(max-width:850px) {
   .sidebar {width:65px;padding:20px 7px}
-  .brand {font-size:0;margin:5px 0 30px;text-align:center}
+  .brand {
+    font-size:0;
+    margin:5px 0 30px;
+    text-align:center;
+  }
   .brand:before {content:"倉";font-size:21px}
   .brand small,.nav-text,.sidebar-foot {display:none}
   .nav-btn {text-align:center;padding:13px 3px;font-size:18px}
@@ -132,7 +358,10 @@ h1 {font-size:25px;margin:0 0 7px}
   .stats {grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:560px) {
-  .topbar {align-items:flex-start;flex-direction:column}
+  .topbar {
+    align-items:flex-start;
+    flex-direction:column;
+  }
   .task-row {grid-template-columns:1fr auto}
   .task-row .task-extra {grid-column:1/-1}
   .day {min-height:75px;padding:5px}
@@ -143,283 +372,1171 @@ h1 {font-size:25px;margin:0 0 7px}
 }
 </style>
 </head>
+
 <body>
+
+<!-- 管理者登入 -->
+<div class="login-overlay" id="loginOverlay">
+  <form class="login-card" id="loginForm">
+    <h2>倉庫智慧派工管理系統</h2>
+    <p>請使用管理者 Firebase 帳號登入</p>
+
+    <label>電子郵件</label>
+    <input id="loginEmail" type="email"
+           autocomplete="username" required>
+
+    <label>密碼</label>
+    <input id="loginPassword" type="password"
+           autocomplete="current-password" required>
+
+    <button class="primary" id="loginButton" type="submit">
+      登入
+    </button>
+
+    <div class="login-error" id="loginError"></div>
+  </form>
+</div>
+
 <div class="app">
+
   <aside class="sidebar">
-    <div class="brand">倉庫智慧派工<small>WAREHOUSE MANAGEMENT</small></div>
-    <button class="nav-btn active" data-page="dashboard">📊 <span class="nav-text">工作儀表板</span></button>
-    <button class="nav-btn" data-page="calendar">📅 <span class="nav-text">工作月曆</span></button>
-    <button class="nav-btn" data-page="tasks">📋 <span class="nav-text">工作管理</span></button>
-    <div class="sidebar-foot">版本 V1.0<br>資料儲存於本機瀏覽器</div>
+    <div class="brand">
+      倉庫智慧派工
+      <small>WAREHOUSE MANAGEMENT</small>
+    </div>
+
+    <button class="nav-btn active" data-page="dashboard">
+      📊 <span class="nav-text">工作儀表板</span>
+    </button>
+
+    <button class="nav-btn" data-page="calendar">
+      📅 <span class="nav-text">工作月曆</span>
+    </button>
+
+    <button class="nav-btn" data-page="tasks">
+      📋 <span class="nav-text">工作管理</span>
+    </button>
+
+    <div class="sidebar-foot">
+      版本 V2.0<br>
+      Firebase 雲端同步
+    </div>
   </aside>
 
   <main class="main">
+
     <div class="topbar">
       <div>
         <h1 id="pageTitle">工作儀表板</h1>
         <div class="subtitle" id="todayText"></div>
+        <div class="connection" id="connectionStatus">
+          尚未登入
+        </div>
       </div>
-      <button class="primary" onclick="openModal()">＋ 新增派工</button>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="secondary" id="logoutButton" type="button">
+          登出
+        </button>
+        <button class="primary" onclick="openModal()">
+          ＋ 新增派工
+        </button>
+      </div>
     </div>
 
+    <!-- 儀表板 -->
     <section class="page active" id="dashboard">
+
       <div class="stats">
-        <div class="stat"><div class="stat-label">今日工作</div><div class="stat-number" id="todayCount">0</div><div class="stat-note">今日預定工作</div></div>
-        <div class="stat"><div class="stat-label">待確認</div><div class="stat-number" id="confirmCount">0</div><div class="stat-note">需要人工確認</div></div>
-        <div class="stat"><div class="stat-label">進行中／待處理</div><div class="stat-number" id="activeCount">0</div><div class="stat-note">尚未完成工作</div></div>
-        <div class="stat"><div class="stat-label">已完成</div><div class="stat-number" id="doneCount">0</div><div class="stat-note">今日完成工作</div></div>
+        <div class="stat">
+          <div class="stat-label">今日工作</div>
+          <div class="stat-number" id="todayCount">0</div>
+          <div class="stat-note">今日預定工作</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">待確認</div>
+          <div class="stat-number" id="confirmCount">0</div>
+          <div class="stat-note">需要人工確認</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">進行中／待處理</div>
+          <div class="stat-number" id="activeCount">0</div>
+          <div class="stat-note">尚未完成工作</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">已完成</div>
+          <div class="stat-number" id="doneCount">0</div>
+          <div class="stat-note">今日完成工作</div>
+        </div>
       </div>
+
       <div class="panel">
-        <div class="panel-head"><h2>📌 今日派工</h2><button class="action-btn" onclick="showPage('tasks')">查看全部 →</button></div>
+        <div class="panel-head">
+          <h2>📌 今日派工</h2>
+          <button class="action-btn" onclick="showPage('tasks')">
+            查看全部 →
+          </button>
+        </div>
         <div id="todayTasks"></div>
       </div>
+
       <div class="panel">
-        <div class="panel-head"><h2>⏰ 近期工作</h2></div>
+        <div class="panel-head">
+          <h2>⏰ 近期工作</h2>
+        </div>
         <div id="upcomingTasks"></div>
       </div>
+
     </section>
 
+    <!-- 月曆 -->
     <section class="page" id="calendar">
       <div class="panel">
         <div class="calendar-head">
-          <button class="secondary" onclick="changeMonth(-1)">← 上個月</button>
+          <button class="secondary" onclick="changeMonth(-1)">
+            ← 上個月
+          </button>
+
           <div class="calendar-title" id="monthTitle"></div>
-          <button class="secondary" onclick="changeMonth(1)">下個月 →</button>
+
+          <button class="secondary" onclick="changeMonth(1)">
+            下個月 →
+          </button>
         </div>
+
         <div class="calendar-grid" id="calendarGrid"></div>
       </div>
+
       <div class="panel">
-        <div class="panel-head"><h2 id="selectedDateTitle">當日工作</h2><button class="primary" onclick="openModal(selectedDate)">＋ 新增</button></div>
+        <div class="panel-head">
+          <h2 id="selectedDateTitle">當日工作</h2>
+          <button class="primary" onclick="openModal(selectedDate)">
+            ＋ 新增
+          </button>
+        </div>
         <div id="selectedDateTasks"></div>
       </div>
     </section>
 
+    <!-- 工作管理 -->
     <section class="page" id="tasks">
       <div class="panel">
-        <div class="panel-head"><h2>全部工作清單</h2></div>
+        <div class="panel-head">
+          <h2>全部工作清單</h2>
+        </div>
+
         <div class="toolbar">
-          <input id="searchInput" placeholder="搜尋品項、人員、路線..." oninput="renderTasks()">
+          <input id="searchInput"
+                 placeholder="搜尋品項、人員、地點..."
+                 oninput="renderTasks()">
+
           <select id="statusFilter" onchange="renderTasks()">
             <option value="">全部狀態</option>
-            <option>待確認</option><option>待處理</option>
-            <option>進行中</option><option>已完成</option><option>已取消</option>
+            <option>待確認</option>
+            <option>待處理</option>
+            <option>進行中</option>
+            <option>已完成</option>
+            <option>已取消</option>
           </select>
-          <input id="dateFilter" type="date" onchange="renderTasks()">
+
+          <input id="dateFilter"
+                 type="date"
+                 onchange="renderTasks()">
         </div>
+
         <div id="allTasks"></div>
       </div>
     </section>
-    <div class="footer-note">倉庫智慧派工管理系統 · V1.0 · 示範資料僅供測試</div>
+
+    <div class="footer-note">
+      倉庫智慧派工管理系統 · V2.0 · Firebase 雲端同步
+    </div>
+
   </main>
 </div>
 
+<!-- 新增／編輯視窗 -->
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <h2 id="modalTitle">新增派工</h2>
+
     <form id="taskForm">
       <input type="hidden" id="taskId">
+
       <div class="form-grid">
+
         <div class="field">
           <label>工作日期 *</label>
           <input type="date" id="taskDate" required>
         </div>
+
         <div class="field">
           <label>負責人</label>
           <input id="person" placeholder="例如：阿豪、祥智">
         </div>
+
         <div class="field">
           <label>品項 *</label>
           <input id="product" placeholder="例如：杏鮑菇B" required>
         </div>
+
         <div class="field">
-          <label>重量（kg）</label>
-          <input type="number" id="weight" min="0" step="0.1" placeholder="180">
+          <label>數量</label>
+          <input type="number" id="quantity"
+                 min="0" step="0.01" placeholder="例如：50">
         </div>
+
         <div class="field">
-          <label>件數</label>
-          <input type="number" id="quantity" min="0" placeholder="10">
+          <label>單位</label>
+          <input id="unit" placeholder="例如：件、包、kg">
         </div>
+
         <div class="field">
           <label>工作狀態</label>
           <select id="taskStatus">
-            <option>待確認</option><option>待處理</option>
-            <option>進行中</option><option>已完成</option><option>已取消</option>
+            <option>待確認</option>
+            <option>待處理</option>
+            <option>進行中</option>
+            <option>已完成</option>
+            <option>已取消</option>
           </select>
         </div>
+
         <div class="field full">
           <label>轉貨路線／地點</label>
-          <input id="route" placeholder="例如：大發 → 正裕 → 永豐">
+          <input id="route" placeholder="例如：一場、二場、西螺倉">
         </div>
+
         <div class="field full">
           <label>工作備註</label>
-          <textarea id="note" placeholder="其他工作內容、注意事項..."></textarea>
+          <textarea id="note"
+                    placeholder="其他工作內容、注意事項..."></textarea>
         </div>
+
       </div>
+
       <div class="modal-actions">
-        <button type="button" class="secondary" onclick="closeModal()">取消</button>
-        <button type="submit" class="primary">儲存工作</button>
+        <button type="button" class="secondary" onclick="closeModal()">
+          取消
+        </button>
+
+        <button type="submit" class="primary" id="saveButton">
+          儲存工作
+        </button>
       </div>
     </form>
   </div>
 </div>
 
-<script>
+<script type="module">
+
+// ======================================================
+// Firebase SDK
+// ======================================================
+
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+import {
+  getFirestore,
+  collection,
+  onSnapshot,
+  doc,
+  setDoc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+// ======================================================
+// Firebase 專案設定
+// ======================================================
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAfmtS0h2itD-HVrhqlFJkSY82D6btVE0w",
+  authDomain: "warehouse-work-managemen-bac6d.firebaseapp.com",
+  projectId: "warehouse-work-managemen-bac6d",
+  storageBucket: "warehouse-work-managemen-bac6d.firebasestorage.app",
+  messagingSenderId: "993114460548",
+  appId: "1:993114460548:web:dfece3d71737446cd64dd1"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ======================================================
+// 基本變數
+// ======================================================
+
 const today = new Date();
+
 const dateKey = d => {
   const x = new Date(d);
   return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;
 };
-const offsetDate = n => {
-  const d = new Date(); d.setDate(d.getDate()+n); return dateKey(d);
-};
+
 const escapeHTML = s => String(s ?? "").replace(/[&<>"']/g,c=>({
-  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#39;"
 }[c]));
 
-let tasks = [];
-try { tasks = JSON.parse(localStorage.getItem("warehouseTasks") || "[]"); }
-catch(e) { tasks=[]; }
-
-if (!tasks.length) {
-  tasks = [
-    {id:"demo1",date:offsetDate(0),person:"阿豪、祥智",product:"杏鮑菇B",weight:180,quantity:10,route:"大發 → 正裕 → 永豐",status:"待處理",note:"早上安排轉二場"},
-    {id:"demo2",date:offsetDate(0),person:"阿明",product:"秀珍菇",weight:80,quantity:5,route:"一場 → 二場",status:"進行中",note:""},
-    {id:"demo3",date:offsetDate(1),person:"小林",product:"金針菇",weight:120,quantity:8,route:"冷藏庫 → 出貨區",status:"待確認",note:"等待確認數量"},
-    {id:"demo4",date:offsetDate(2),person:"阿豪",product:"杏鮑菇A",weight:200,quantity:12,route:"二場 → 包裝區",status:"已完成",note:""}
-  ];
-  save();
-}
-function save() { localStorage.setItem("warehouseTasks",JSON.stringify(tasks)); }
 function formatDate(s) {
-  if (!s) return "";
-  const [y,m,d]=s.split("-");
+  if (!s) return "日期待確認";
+  const [y,m,d] = s.split("-");
   return `${y}/${m}/${d}`;
 }
+
+let tasks = [];
+let rawDocuments = new Map();
+let unsubscribeTasks = null;
+
+let monthView = new Date(today.getFullYear(),today.getMonth(),1);
+let selectedDate = dateKey(today);
+
+// ======================================================
+// 狀態及連線顯示
+// ======================================================
+
 function statusClass(s) {
-  return {"待確認":"s-confirm","待處理":"s-pending","進行中":"s-progress","已完成":"s-done","已取消":"s-cancel"}[s] || "s-pending";
+  return {
+    "待確認":"s-confirm",
+    "待處理":"s-pending",
+    "進行中":"s-progress",
+    "已完成":"s-done",
+    "已取消":"s-cancel"
+  }[s] || "s-pending";
 }
-function statusTag(s) { return `<span class="status ${statusClass(s)}">${escapeHTML(s)}</span>`; }
-function taskHTML(t) {
-  return `<div class="task-row">
-    <div><div class="task-name">${escapeHTML(t.product)}</div>
-      <div class="task-sub">${formatDate(t.date)} · ${escapeHTML(t.person||"未指定人員")}</div></div>
-    <div class="task-extra">${escapeHTML(t.weight||0)} kg / ${escapeHTML(t.quantity||0)} 件</div>
-    <div class="task-extra">${statusTag(t.status)}</div>
-    <div><button class="action-btn" onclick="editTask('${t.id}')">編輯</button></div>
-  </div>`;
+
+function statusTag(s) {
+  return `<span class="status ${statusClass(s)}">${escapeHTML(s || "待確認")}</span>`;
 }
-function renderDashboard() {
-  const todayTasks=tasks.filter(t=>t.date===dateKey(today)&&t.status!=="已取消");
-  document.getElementById("todayCount").textContent=todayTasks.length;
-  document.getElementById("confirmCount").textContent=todayTasks.filter(t=>t.status==="待確認").length;
-  document.getElementById("activeCount").textContent=todayTasks.filter(t=>["待處理","進行中"].includes(t.status)).length;
-  document.getElementById("doneCount").textContent=todayTasks.filter(t=>t.status==="已完成").length;
-  document.getElementById("todayTasks").innerHTML=todayTasks.length?todayTasks.map(taskHTML).join(""):'<div class="empty">今天沒有派工</div>';
-  const upcoming=tasks.filter(t=>t.date>dateKey(today)&&t.status!=="已取消").sort((a,b)=>a.date.localeCompare(b.date)).slice(0,6);
-  document.getElementById("upcomingTasks").innerHTML=upcoming.length?upcoming.map(taskHTML).join(""):'<div class="empty">目前沒有未來工作</div>';
+
+function setConnection(message,color="#8490a1") {
+  const el = document.getElementById("connectionStatus");
+  el.textContent = message;
+  el.style.color = color;
 }
-function renderTasks() {
-  const q=document.getElementById("searchInput").value.toLowerCase();
-  const st=document.getElementById("statusFilter").value;
-  const dt=document.getElementById("dateFilter").value;
-  const list=tasks.filter(t=>
-    (!q||[t.product,t.person,t.route,t.note].join(" ").toLowerCase().includes(q)) &&
-    (!st||t.status===st) && (!dt||t.date===dt)
-  ).sort((a,b)=>a.date.localeCompare(b.date));
-  document.getElementById("allTasks").innerHTML=list.length?list.map(taskHTML).join(""):'<div class="empty">沒有符合條件的工作</div>';
-}
-let monthView=new Date(today.getFullYear(),today.getMonth(),1);
-let selectedDate=dateKey(today);
-function changeMonth(n) {
-  monthView.setMonth(monthView.getMonth()+n); renderCalendar();
-}
-function renderCalendar() {
-  const y=monthView.getFullYear(),m=monthView.getMonth();
-  document.getElementById("monthTitle").textContent=`${y} 年 ${m+1} 月`;
-  const grid=document.getElementById("calendarGrid");
-  const days=["日","一","二","三","四","五","六"];
-  let html=days.map(d=>`<div class="weekday">${d}</div>`).join("");
-  const first=new Date(y,m,1).getDay();
-  const total=new Date(y,m+1,0).getDate();
-  const prevTotal=new Date(y,m,0).getDate();
-  for(let i=0;i<42;i++){
-    let d,other=false;
-    if(i<first){d=new Date(y,m-1,prevTotal-first+i+1);other=true;}
-    else if(i>=first+total){d=new Date(y,m+1,i-first-total+1);other=true;}
-    else d=new Date(y,m,i-first+1);
-    const key=dateKey(d);
-    const list=tasks.filter(t=>t.date===key&&t.status!=="已取消");
-    html+=`<div class="day ${other?"other":""} ${key===dateKey(today)?"today":""} ${key===selectedDate?"selected":""}" onclick="selectDay('${key}')">
-      <div class="day-num">${d.getDate()}</div>
-      ${list.slice(0,2).map(t=>`<div class="day-task ${t.status==="已完成"?"done":t.status==="待確認"?"confirm":t.status==="待處理"?"pending":""}">${escapeHTML(t.product)}</div>`).join("")}
-      ${list.length>2?`<div class="task-sub">另有 ${list.length-2} 筆</div>`:""}
-    </div>`;
+
+// ======================================================
+// Firestore 資料轉換
+// 對應目前 LINE Worker 寫入的 tasks 格式
+// ======================================================
+
+function normalizeDocument(id,data) {
+
+  const dates = Array.isArray(data.dates) ? data.dates : [];
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  const assignees = Array.isArray(data.assignees)
+    ? data.assignees.map(p =>
+        typeof p === "string" ? p : (p?.name || "")
+      ).filter(Boolean)
+    : [];
+
+  const person = assignees.join("、");
+
+  const locations = Array.isArray(data.locations)
+    ? data.locations
+    : (Array.isArray(data.route)
+        ? data.route
+        : (data.location ? [data.location] : []));
+
+  const location = locations.join("、");
+
+  const note = [
+    data.task || "",
+    data.notes || "",
+    data.originalMessage || ""
+  ].filter(Boolean).join("\n");
+
+  const status = data.status || "待確認";
+
+  const confirmation = Array.isArray(data.needsConfirmation)
+    ? data.needsConfirmation.join("、")
+    : "";
+
+  // 有數量的品項
+  if (items.length) {
+
+    return items.map((item,index) => {
+
+      const date =
+        item.date ||
+        data.date ||
+        (dates.length === 1 ? dates[0].date : "") ||
+        "";
+
+      return {
+        id: `${id}__${index}`,
+        parentId: id,
+        itemIndex: index,
+
+        date,
+        person,
+        product: item.name || "未辨識品項",
+
+        quantity: Number(item.quantity || 0),
+        unit: item.unit || "",
+
+        convertedQuantity: item.convertedQuantity ?? null,
+        convertedUnit: item.convertedUnit || "",
+
+        route: location,
+        note,
+
+        status,
+        confirmation,
+
+        originalLine: item.originalLine || "",
+        originalMessage: data.originalMessage || "",
+        raw: data
+      };
+    });
   }
-  grid.innerHTML=html;
+
+  // 沒有數量但有明確工作內容的任務
+  if (data.task || data.item || data.namedProducts?.length) {
+
+    const date =
+      data.date ||
+      dates[0]?.date ||
+      "";
+
+    return [{
+      id: `${id}__0`,
+      parentId: id,
+      itemIndex: -1,
+
+      date,
+      person,
+      product: data.item || data.namedProducts?.[0] || data.task,
+
+      quantity: Number(data.weight || 0),
+      unit: data.weight ? "kg" : "",
+
+      convertedQuantity: null,
+      convertedUnit: "",
+
+      route: location,
+      note,
+      status,
+      confirmation,
+
+      originalLine: "",
+      originalMessage: data.originalMessage || "",
+      raw: data
+    }];
+  }
+
+  return [];
+}
+
+// ======================================================
+// 顯示單筆工作
+// ======================================================
+
+function taskHTML(t) {
+
+  const amount = t.unit
+    ? `${escapeHTML(t.quantity)} ${escapeHTML(t.unit)}`
+    : (t.quantity ? escapeHTML(t.quantity) : "數量待確認");
+
+  const converted = t.convertedQuantity !== null
+    ? `<div class="task-sub">換算：${escapeHTML(t.convertedQuantity)} ${escapeHTML(t.convertedUnit)}</div>`
+    : "";
+
+  const warning = t.confirmation
+    ? `<div class="task-sub" style="color:#c43c3c">⚠ ${escapeHTML(t.confirmation)}</div>`
+    : "";
+
+  const sourceText = t.originalMessage
+    ? `<details class="original-message">
+         <summary>查看 LINE 原始訊息</summary>
+         ${escapeHTML(t.originalMessage)}
+       </details>`
+    : "";
+
+  return `
+    <div class="task-row">
+      <div>
+        <div class="task-name">${escapeHTML(t.product)}</div>
+        <div class="task-sub">
+          ${formatDate(t.date)} · ${escapeHTML(t.person || "未指定人員")}
+        </div>
+        ${t.route ? `<div class="task-sub">地點：${escapeHTML(t.route)}</div>` : ""}
+        ${warning}
+        ${converted}
+        ${sourceText}
+      </div>
+
+      <div class="task-extra">${amount}</div>
+
+      <div class="task-extra">${statusTag(t.status)}</div>
+
+      <div>
+        <button class="action-btn" data-edit-id="${escapeHTML(t.id)}">
+          編輯
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// ======================================================
+// 儀表板
+// ======================================================
+
+function renderDashboard() {
+
+  const todayTasks = tasks.filter(t =>
+    t.date === dateKey(today) &&
+    t.status !== "已取消"
+  );
+
+  document.getElementById("todayCount").textContent =
+    todayTasks.length;
+
+  document.getElementById("confirmCount").textContent =
+    todayTasks.filter(t => t.status === "待確認").length;
+
+  document.getElementById("activeCount").textContent =
+    todayTasks.filter(t =>
+      ["待處理","進行中"].includes(t.status)
+    ).length;
+
+  document.getElementById("doneCount").textContent =
+    todayTasks.filter(t => t.status === "已完成").length;
+
+  document.getElementById("todayTasks").innerHTML =
+    todayTasks.length
+      ? todayTasks.map(taskHTML).join("")
+      : '<div class="empty">今天沒有派工</div>';
+
+  const upcoming = tasks
+    .filter(t => t.date > dateKey(today) && t.status !== "已取消")
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .slice(0,6);
+
+  document.getElementById("upcomingTasks").innerHTML =
+    upcoming.length
+      ? upcoming.map(taskHTML).join("")
+      : '<div class="empty">目前沒有未來工作</div>';
+}
+
+// ======================================================
+// 工作清單及搜尋
+// ======================================================
+
+function renderTasks() {
+
+  const q = document.getElementById("searchInput").value.toLowerCase();
+  const st = document.getElementById("statusFilter").value;
+  const dt = document.getElementById("dateFilter").value;
+
+  const list = tasks.filter(t => {
+
+    const content = [
+      t.product,
+      t.person,
+      t.route,
+      t.note,
+      t.confirmation
+    ].join(" ").toLowerCase();
+
+    return (
+      (!q || content.includes(q)) &&
+      (!st || t.status === st) &&
+      (!dt || t.date === dt)
+    );
+
+  }).sort((a,b) => (a.date || "").localeCompare(b.date || ""));
+
+  document.getElementById("allTasks").innerHTML =
+    list.length
+      ? list.map(taskHTML).join("")
+      : '<div class="empty">沒有符合條件的工作</div>';
+}
+
+// ======================================================
+// 月曆
+// ======================================================
+
+function changeMonth(n) {
+  monthView.setMonth(monthView.getMonth()+n);
+  renderCalendar();
+}
+
+function renderCalendar() {
+
+  const y = monthView.getFullYear();
+  const m = monthView.getMonth();
+
+  document.getElementById("monthTitle").textContent =
+    `${y} 年 ${m+1} 月`;
+
+  const grid = document.getElementById("calendarGrid");
+  const days = ["日","一","二","三","四","五","六"];
+
+  let html = days.map(d =>
+    `<div class="weekday">${d}</div>`
+  ).join("");
+
+  const first = new Date(y,m,1).getDay();
+  const total = new Date(y,m+1,0).getDate();
+  const prevTotal = new Date(y,m,0).getDate();
+
+  for (let i=0;i<42;i++) {
+
+    let d,other=false;
+
+    if (i<first) {
+      d = new Date(y,m-1,prevTotal-first+i+1);
+      other = true;
+    }
+    else if (i>=first+total) {
+      d = new Date(y,m+1,i-first-total+1);
+      other = true;
+    }
+    else {
+      d = new Date(y,m,i-first+1);
+    }
+
+    const key = dateKey(d);
+
+    const list = tasks.filter(t =>
+      t.date === key &&
+      t.status !== "已取消"
+    );
+
+    html += `
+      <div class="day
+        ${other ? "other" : ""}
+        ${key===dateKey(today) ? "today" : ""}
+        ${key===selectedDate ? "selected" : ""}"
+        data-select-date="${key}">
+
+        <div class="day-num">${d.getDate()}</div>
+
+        ${list.slice(0,2).map(t => `
+          <div class="day-task ${
+            t.status==="已完成" ? "done" :
+            t.status==="待確認" ? "confirm" :
+            t.status==="待處理" ? "pending" : ""
+          }">
+            ${escapeHTML(t.product)}
+          </div>
+        `).join("")}
+
+        ${list.length>2
+          ? `<div class="task-sub">另有 ${list.length-2} 筆</div>`
+          : ""
+        }
+      </div>
+    `;
+  }
+
+  grid.innerHTML = html;
   renderSelectedDay();
 }
-function selectDay(key) { selectedDate=key; renderCalendar(); }
+
+function selectDay(key) {
+  selectedDate = key;
+  renderCalendar();
+}
+
 function renderSelectedDay() {
-  document.getElementById("selectedDateTitle").textContent=`${formatDate(selectedDate)} 工作`;
-  const list=tasks.filter(t=>t.date===selectedDate&&t.status!=="已取消");
-  document.getElementById("selectedDateTasks").innerHTML=list.length?list.map(taskHTML).join(""):'<div class="empty">這一天沒有派工</div>';
+
+  document.getElementById("selectedDateTitle").textContent =
+    `${formatDate(selectedDate)} 工作`;
+
+  const list = tasks.filter(t =>
+    t.date === selectedDate &&
+    t.status !== "已取消"
+  );
+
+  document.getElementById("selectedDateTasks").innerHTML =
+    list.length
+      ? list.map(taskHTML).join("")
+      : '<div class="empty">這一天沒有派工</div>';
 }
+
+// ======================================================
+// 頁面切換
+// ======================================================
+
 function showPage(name) {
-  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+
+  document.querySelectorAll(".page").forEach(p =>
+    p.classList.remove("active")
+  );
+
   document.getElementById(name).classList.add("active");
-  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.page===name));
-  document.getElementById("pageTitle").textContent={dashboard:"工作儀表板",calendar:"工作月曆",tasks:"工作管理"}[name];
-  if(name==="calendar")renderCalendar();
-  if(name==="tasks")renderTasks();
+
+  document.querySelectorAll(".nav-btn").forEach(b =>
+    b.classList.toggle("active",b.dataset.page===name)
+  );
+
+  document.getElementById("pageTitle").textContent = {
+    dashboard:"工作儀表板",
+    calendar:"工作月曆",
+    tasks:"工作管理"
+  }[name];
+
+  if (name==="calendar") renderCalendar();
+  if (name==="tasks") renderTasks();
 }
-document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
+
+// ======================================================
+// 新增／編輯視窗
+// ======================================================
 
 function openModal(date=dateKey(today),task=null) {
+
   document.getElementById("taskForm").reset();
-  document.getElementById("taskId").value=task?.id||"";
-  document.getElementById("taskDate").value=task?.date||date;
-  document.getElementById("person").value=task?.person||"";
-  document.getElementById("product").value=task?.product||"";
-  document.getElementById("weight").value=task?.weight||"";
-  document.getElementById("quantity").value=task?.quantity||"";
-  document.getElementById("route").value=task?.route||"";
-  document.getElementById("note").value=task?.note||"";
-  document.getElementById("taskStatus").value=task?.status||"待確認";
-  document.getElementById("modalTitle").textContent=task?"修改派工":"新增派工";
+
+  document.getElementById("taskId").value = task?.id || "";
+  document.getElementById("taskDate").value = task?.date || date;
+  document.getElementById("person").value = task?.person || "";
+  document.getElementById("product").value = task?.product || "";
+  document.getElementById("quantity").value = task?.quantity || "";
+  document.getElementById("unit").value = task?.unit || "";
+  document.getElementById("route").value = task?.route || "";
+  document.getElementById("note").value = task?.note || "";
+  document.getElementById("taskStatus").value = task?.status || "待確認";
+
+  document.getElementById("modalTitle").textContent =
+    task ? "修改派工" : "新增派工";
+
   document.getElementById("modalBg").classList.add("show");
 }
-function closeModal(){document.getElementById("modalBg").classList.remove("show");}
+
+function closeModal() {
+  document.getElementById("modalBg").classList.remove("show");
+}
+
 function editTask(id) {
-  const task=tasks.find(t=>t.id===id);
-  if(task)openModal(task.date,task);
+  const task = tasks.find(t => t.id === id);
+  if (task) openModal(task.date,task);
 }
-document.getElementById("taskForm").addEventListener("submit",e=>{
+
+// ======================================================
+// 儲存工作至 Firestore
+// ======================================================
+
+async function saveTask(e) {
+
   e.preventDefault();
-  const id=document.getElementById("taskId").value;
-  const item={
-    id:id||("task_"+Date.now()),
-    date:document.getElementById("taskDate").value,
-    person:document.getElementById("person").value.trim(),
-    product:document.getElementById("product").value.trim(),
-    weight:Number(document.getElementById("weight").value)||0,
-    quantity:Number(document.getElementById("quantity").value)||0,
-    route:document.getElementById("route").value.trim(),
-    note:document.getElementById("note").value.trim(),
-    status:document.getElementById("taskStatus").value
-  };
-  if(id)tasks=tasks.map(t=>t.id===id?item:t);
-  else tasks.push(item);
-  save(); closeModal(); refresh();
-});
-function refresh() {
-  renderDashboard(); renderTasks(); renderCalendar();
+
+  if (!auth.currentUser) {
+    alert("請先登入管理者帳號");
+    return;
+  }
+
+  const button = document.getElementById("saveButton");
+  button.disabled = true;
+  button.textContent = "儲存中…";
+
+  const id = document.getElementById("taskId").value;
+
+  const date = document.getElementById("taskDate").value;
+  const personText = document.getElementById("person").value.trim();
+  const product = document.getElementById("product").value.trim();
+
+  const quantity = Number(
+    document.getElementById("quantity").value
+  ) || 0;
+
+  const unit = document.getElementById("unit").value.trim();
+  const routeText = document.getElementById("route").value.trim();
+  const note = document.getElementById("note").value.trim();
+  const status = document.getElementById("taskStatus").value;
+
+  const assignees = personText
+    ? personText.split(/[、,，]/).map(s=>s.trim()).filter(Boolean)
+    : [];
+
+  const locations = routeText
+    ? routeText.split(/[、,，]/).map(s=>s.trim()).filter(Boolean)
+    : [];
+
+  try {
+
+    if (id) {
+
+      // 修改既有 LINE 派工中的單一品項
+      const current = tasks.find(t => t.id === id);
+
+      if (!current) {
+        throw new Error("找不到要修改的派工資料");
+      }
+
+      const parentId = current.parentId;
+      const original = rawDocuments.get(parentId);
+
+      if (!original) {
+        throw new Error("找不到原始 Firestore 文件");
+      }
+
+      const ref = doc(db,"tasks",parentId);
+
+      const items = Array.isArray(original.items)
+        ? [...original.items]
+        : [];
+
+      const newItem = {
+        name: product,
+        quantity,
+        unit: unit || null,
+        convertedQuantity: current.convertedQuantity ?? null,
+        convertedUnit: current.convertedUnit || null,
+        originalLine: `${product} ${quantity}${unit}`,
+        date,
+        dateNeedsConfirmation: false
+      };
+
+      if (
+        current.itemIndex >= 0 &&
+        current.itemIndex < items.length
+      ) {
+        // 僅修改指定品項，保留同筆訊息的其他品項
+        items[current.itemIndex] = {
+          ...items[current.itemIndex],
+          ...newItem
+        };
+      }
+      else {
+        items.push(newItem);
+      }
+
+      // status 是整筆 LINE 派工共用狀態
+      await updateDoc(ref,{
+        items,
+        assignees,
+        locations,
+        notes: note,
+        status,
+        updatedAt: new Date().toISOString()
+      });
+
+    } else {
+
+      // 新增手動派工
+      const ref = doc(collection(db,"tasks"));
+
+      const newTask = {
+
+        isTask: true,
+
+        date,
+        dates: [{
+          date,
+          source: "手動新增",
+          originalText: date
+        }],
+
+        deadlines: [],
+        time: null,
+
+        task: "手動新增派工",
+        assignees,
+        assigneeDetails: [],
+        assigneeUserIds: [],
+
+        item: product,
+
+        items: [{
+          name: product,
+          quantity,
+          unit: unit || null,
+          convertedQuantity: null,
+          convertedUnit: null,
+          originalLine: `${product} ${quantity}${unit}`,
+          date,
+          dateNeedsConfirmation: false
+        }],
+
+        namedProducts: [product],
+
+        weight: /^(kg|公斤)$/i.test(unit) ? quantity : null,
+        quantity: `${quantity}${unit}`,
+
+        route: locations,
+        locations,
+
+        notes: note,
+        needsConfirmation: [],
+
+        summary: `${date}｜${product} ${quantity}${unit}`,
+
+        status,
+        parserType: "manual",
+        parserVersion: "1.0",
+
+        originalMessage: note,
+        originalMessageId: ref.id,
+        groupId: "",
+        senderUserId: "",
+
+        source: "MANUAL",
+
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      await setDoc(ref,newTask);
+    }
+
+    closeModal();
+
+  } catch(error) {
+
+    console.error("Firestore save error:",error);
+
+    alert("儲存失敗：\n" + error.message);
+
+  } finally {
+
+    button.disabled = false;
+    button.textContent = "儲存工作";
+  }
 }
-document.getElementById("modalBg").addEventListener("click",e=>{
-  if(e.target.id==="modalBg")closeModal();
+
+// ======================================================
+// 即時監聽 Firestore tasks
+// ======================================================
+
+function startTasksListener() {
+
+  if (unsubscribeTasks) {
+    unsubscribeTasks();
+  }
+
+  setConnection("Firebase 資料讀取中…");
+
+  unsubscribeTasks = onSnapshot(
+    collection(db,"tasks"),
+
+    snapshot => {
+
+      tasks = [];
+      rawDocuments = new Map();
+
+      snapshot.forEach(docSnap => {
+
+        const data = docSnap.data();
+
+        rawDocuments.set(docSnap.id,data);
+
+        tasks.push(
+          ...normalizeDocument(docSnap.id,data)
+        );
+
+      });
+
+      refresh();
+
+      setConnection(
+        `雲端同步中 · ${snapshot.size} 筆派工文件`,
+        "#21834c"
+      );
+
+    },
+
+    error => {
+
+      console.error("Firestore listener error:",error);
+
+      setConnection("資料讀取失敗","#c43c3c");
+
+      alert(
+        "讀取 Firebase tasks 失敗：\n" +
+        error.message
+      );
+
+    }
+  );
+}
+
+// ======================================================
+// 登入
+// ======================================================
+
+document.getElementById("loginForm")
+  .addEventListener("submit",async e=>{
+
+    e.preventDefault();
+
+    const email =
+      document.getElementById("loginEmail").value.trim();
+
+    const password =
+      document.getElementById("loginPassword").value;
+
+    const button =
+      document.getElementById("loginButton");
+
+    const errorBox =
+      document.getElementById("loginError");
+
+    button.disabled = true;
+    button.textContent = "登入中…";
+    errorBox.textContent = "";
+
+    try {
+
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+    } catch(error) {
+
+      errorBox.textContent =
+        "登入失敗：" + error.message;
+
+    } finally {
+
+      button.disabled = false;
+      button.textContent = "登入";
+
+    }
+
+  });
+
+// ======================================================
+// 登出
+// ======================================================
+
+document.getElementById("logoutButton")
+  .addEventListener("click",async()=>{
+
+    if (unsubscribeTasks) {
+      unsubscribeTasks();
+      unsubscribeTasks = null;
+    }
+
+    await signOut(auth);
+
+  });
+
+// ======================================================
+// Firebase 登入狀態監聽
+// ======================================================
+
+onAuthStateChanged(auth,user=>{
+
+  const overlay =
+    document.getElementById("loginOverlay");
+
+  if (user) {
+
+    overlay.style.display = "none";
+
+    startTasksListener();
+
+  } else {
+
+    overlay.style.display = "flex";
+
+    tasks = [];
+    rawDocuments = new Map();
+
+    refresh();
+
+    setConnection("尚未登入");
+
+    if (unsubscribeTasks) {
+      unsubscribeTasks();
+      unsubscribeTasks = null;
+    }
+
+  }
+
 });
-document.getElementById("todayText").textContent=
-  today.toLocaleDateString("zh-TW",{year:"numeric",month:"long",day:"numeric",weekday:"long"});
+
+// ======================================================
+// 事件綁定
+// ======================================================
+
+document.querySelectorAll(".nav-btn").forEach(button=>{
+
+  button.addEventListener("click",()=>{
+    showPage(button.dataset.page);
+  });
+
+});
+
+document.getElementById("taskForm")
+  .addEventListener("submit",saveTask);
+
+document.getElementById("modalBg")
+  .addEventListener("click",e=>{
+
+    if (e.target.id==="modalBg") {
+      closeModal();
+    }
+
+  });
+
+// 編輯按鈕：使用事件代理
+document.addEventListener("click",e=>{
+
+  const editButton = e.target.closest("[data-edit-id]");
+
+  if (editButton) {
+    editTask(editButton.dataset.editId);
+  }
+
+  const day = e.target.closest("[data-select-date]");
+
+  if (day) {
+    selectDay(day.dataset.selectDate);
+  }
+
+});
+
+// ======================================================
+// 初始化
+// ======================================================
+
+document.getElementById("todayText").textContent =
+  today.toLocaleDateString("zh-TW",{
+    year:"numeric",
+    month:"long",
+    day:"numeric",
+    weekday:"long"
+  });
+
+function refresh() {
+  renderDashboard();
+  renderTasks();
+  renderCalendar();
+}
+
+Object.assign(window,{
+  openModal,
+  closeModal,
+  showPage,
+  changeMonth,
+  renderTasks
+});
+
 refresh();
+
 </script>
+
 </body>
 </html>
