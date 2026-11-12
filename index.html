@@ -132,13 +132,32 @@ h1 {font-size:25px;margin:0 0 7px}
 .panel-head h2 {font-size:17px;margin:0}
 .task-row {
   display:grid;
-  grid-template-columns:1.2fr 1fr 1fr auto;
+  grid-template-columns:minmax(220px,1.7fr) minmax(130px,0.9fr) auto auto auto;
   align-items:center;
-  gap:12px;
-  padding:14px 0;
+  gap:14px;
+  padding:16px 0;
   border-top:1px solid var(--line);
 }
 .task-name {font-weight:bold;font-size:14px}
+.task-assignee {
+  background:#eef3ff;
+  border:1px solid #d9e4ff;
+  border-radius:10px;
+  padding:10px 13px;
+  min-width:0;
+}
+.task-assignee-label {font-size:10px;color:#5870a8;font-weight:bold;letter-spacing:1px;margin-bottom:4px}
+.task-assignee-name {font-size:17px;font-weight:800;color:#2449a8;line-height:1.35;word-break:break-word}
+.delete-btn {
+  border:1px solid #f1caca;
+  background:#fff5f5;
+  color:#c43c3c;
+  border-radius:7px;
+  padding:7px 10px;
+  font-size:12px;
+  font-weight:bold;
+}
+.delete-btn:hover {background:#ffe8e8}
 .task-sub {
   font-size:12px;
   color:var(--muted);
@@ -362,8 +381,12 @@ h1 {font-size:25px;margin:0 0 7px}
     align-items:flex-start;
     flex-direction:column;
   }
-  .task-row {grid-template-columns:1fr auto}
-  .task-row .task-extra {grid-column:1/-1}
+  .task-row {grid-template-columns:1fr 1fr;align-items:start}
+  .task-row > :first-child {grid-column:1/-1}
+  .task-row .task-assignee {grid-column:1/-1}
+  .task-row .task-extra {grid-column:auto}
+  .task-row .task-actions {grid-column:1/-1;display:flex;gap:14px;justify-content:flex-end}
+  .task-assignee-name {font-size:18px}
   .day {min-height:75px;padding:5px}
   .day-task {font-size:9px;padding:3px}
   .calendar-grid {gap:3px}
@@ -618,7 +641,8 @@ import {
   onSnapshot,
   doc,
   setDoc,
-  updateDoc
+  updateDoc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 // ======================================================
@@ -806,13 +830,20 @@ function taskHTML(t) {
     <div class="task-row">
       <div>
         <div class="task-name" style="white-space:pre-wrap;word-break:break-word">${escapeHTML(t.product)}</div>
-        <div class="task-sub">${formatDate(t.date)} · ${escapeHTML(t.person || "資材全部")}</div>
+        <div class="task-sub">${formatDate(t.date)}</div>
         ${warning}
         ${sourceText}
       </div>
+      <div class="task-assignee">
+        <div class="task-assignee-label">負責人</div>
+        <div class="task-assignee-name">${escapeHTML(t.person || "資材全部")}</div>
+      </div>
       <div class="task-extra">${amount}</div>
       <div class="task-extra">${statusTag(t.status)}</div>
-      <div><button class="action-btn" data-edit-id="${escapeHTML(t.id)}">編輯</button></div>
+      <div class="task-actions">
+        <button class="action-btn" data-edit-id="${escapeHTML(t.id)}">編輯</button>
+        <button class="delete-btn" data-delete-id="${escapeHTML(t.id)}">刪除</button>
+      </div>
     </div>
   `;
 }
@@ -1036,6 +1067,33 @@ function closeModal() {
 function editTask(id) {
   const task = tasks.find(t => t.id === id);
   if (task) openModal(task.date,task);
+}
+
+// ======================================================
+// 刪除工作（LINE 同一則訊息若拆成多個日期，會整筆刪除）
+// ======================================================
+
+async function deleteTask(id) {
+  if (!auth.currentUser) {
+    alert("請先登入管理者帳號");
+    return;
+  }
+  const task = tasks.find(t => t.id === id);
+  if (!task) {
+    alert("找不到要刪除的工作");
+    return;
+  }
+  const parentId = task.parentId || id;
+  const message = task.simpleTask
+    ? "這筆工作可能包含同一則 LINE 訊息中的多個日期。\n確定要刪除整則訊息所建立的所有工作嗎？此操作無法復原。"
+    : "確定要刪除這筆工作嗎？此操作無法復原。";
+  if (!window.confirm(message)) return;
+  try {
+    await deleteDoc(doc(db,"tasks",parentId));
+  } catch(error) {
+    console.error("Firestore delete error:",error);
+    alert("刪除失敗：\n" + error.message);
+  }
 }
 
 // ======================================================
@@ -1300,10 +1358,16 @@ document.getElementById("modalBg")
 // 編輯按鈕：使用事件代理
 document.addEventListener("click",e=>{
 
-  const editButton = e.target.closest("[data-edit-id]");
+  const deleteButton = e.target.closest("[data-delete-id]");
+  if (deleteButton) {
+    deleteTask(deleteButton.dataset.deleteId);
+    return;
+  }
 
+  const editButton = e.target.closest("[data-edit-id]");
   if (editButton) {
     editTask(editButton.dataset.editId);
+    return;
   }
 
   const day = e.target.closest("[data-select-date]");
