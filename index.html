@@ -375,18 +375,26 @@ h1 {font-size:25px;margin:0 0 7px}
 
 <body>
 
-<!-- 管理者 Google 登入 -->
+<!-- 管理者登入 -->
 <div class="login-overlay" id="loginOverlay">
-  <div class="login-card">
+  <form class="login-card" id="loginForm">
     <h2>倉庫智慧派工管理系統</h2>
-    <p>請使用管理者 Google 帳號登入</p>
+    <p>請使用管理者 Firebase 帳號登入</p>
 
-    <button class="primary" id="loginButton" type="button">
-      使用 Google 帳號登入
+    <label>電子郵件</label>
+    <input id="loginEmail" type="email"
+           autocomplete="username" required>
+
+    <label>密碼</label>
+    <input id="loginPassword" type="password"
+           autocomplete="current-password" required>
+
+    <button class="primary" id="loginButton" type="submit">
+      登入
     </button>
 
     <div class="login-error" id="loginError"></div>
-  </div>
+  </form>
 </div>
 
 <div class="app">
@@ -447,9 +455,9 @@ h1 {font-size:25px;margin:0 0 7px}
         </div>
 
         <div class="stat">
-          <div class="stat-label">待確認</div>
+          <div class="stat-label">待處理</div>
           <div class="stat-number" id="confirmCount">0</div>
-          <div class="stat-note">需要人工確認</div>
+          <div class="stat-note">尚未開始的工作</div>
         </div>
 
         <div class="stat">
@@ -522,7 +530,7 @@ h1 {font-size:25px;margin:0 0 7px}
 
         <div class="toolbar">
           <input id="searchInput"
-                 placeholder="搜尋品項、人員、地點..."
+                 placeholder="搜尋交辦事項或人員..."
                  oninput="renderTasks()">
 
           <select id="statusFilter" onchange="renderTasks()">
@@ -557,67 +565,32 @@ h1 {font-size:25px;margin:0 0 7px}
 
     <form id="taskForm">
       <input type="hidden" id="taskId">
-
       <div class="form-grid">
-
         <div class="field">
           <label>工作日期 *</label>
           <input type="date" id="taskDate" required>
         </div>
-
         <div class="field">
           <label>負責人</label>
-          <input id="person" placeholder="例如：阿豪、祥智">
+          <input id="person" placeholder="例如：祥智、澂；未指定則填資材全部">
         </div>
-
-        <div class="field">
-          <label>品項 *</label>
-          <input id="product" placeholder="例如：杏鮑菇B" required>
+        <div class="field full">
+          <label>交辦事項 *</label>
+          <textarea id="product" placeholder="完整工作內容" required></textarea>
         </div>
-
-        <div class="field">
-          <label>數量</label>
-          <input type="number" id="quantity"
-                 min="0" step="0.01" placeholder="例如：50">
-        </div>
-
-        <div class="field">
-          <label>單位</label>
-          <input id="unit" placeholder="例如：件、包、kg">
-        </div>
-
         <div class="field">
           <label>工作狀態</label>
           <select id="taskStatus">
-            <option>待確認</option>
             <option>待處理</option>
             <option>進行中</option>
             <option>已完成</option>
             <option>已取消</option>
           </select>
         </div>
-
-        <div class="field full">
-          <label>轉貨路線／地點</label>
-          <input id="route" placeholder="例如：一場、二場、西螺倉">
-        </div>
-
-        <div class="field full">
-          <label>工作備註</label>
-          <textarea id="note"
-                    placeholder="其他工作內容、注意事項..."></textarea>
-        </div>
-
       </div>
-
       <div class="modal-actions">
-        <button type="button" class="secondary" onclick="closeModal()">
-          取消
-        </button>
-
-        <button type="submit" class="primary" id="saveButton">
-          儲存工作
-        </button>
+        <button type="button" class="secondary" onclick="closeModal()">取消</button>
+        <button type="submit" class="primary" id="saveButton">儲存工作</button>
       </div>
     </form>
   </div>
@@ -634,8 +607,7 @@ import { initializeApp }
 
 import {
   getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
+  signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
@@ -728,111 +700,89 @@ function setConnection(message,color="#8490a1") {
 // ======================================================
 
 function normalizeDocument(id,data) {
-
   const dates = Array.isArray(data.dates) ? data.dates : [];
-  const items = Array.isArray(data.items) ? data.items : [];
-
   const assignees = Array.isArray(data.assignees)
-    ? data.assignees.map(p =>
-        typeof p === "string" ? p : (p?.name || "")
-      ).filter(Boolean)
+    ? data.assignees.map(p => typeof p === "string" ? p : (p?.name || "")).filter(Boolean)
     : [];
+  const person = assignees.join("、") || "資材全部";
+  const status = data.status || "待處理";
+  const taskContent = String(
+    data.taskContent || data.originalMessage || data.task || data.item || ""
+  ).trim();
 
-  const person = assignees.join("、");
+  // Worker 2.5 簡化格式：只要有工作內容及日期，就直接顯示，不進人工確認佇列。
+  if (taskContent) {
+    const dateEntries = dates
+      .map((d, index) => ({
+        date: d?.dateText || d?.date || "",
+        dateIndex: index
+      }))
+      .filter(d => d.date);
+    if (!dateEntries.length && data.date) {
+      dateEntries.push({ date: data.date, dateIndex: 0 });
+    }
 
+    if (dateEntries.length) {
+      return dateEntries.map((entry, index) => ({
+        id: `${id}__simple_${index}`,
+        parentId: id,
+        itemIndex: -1,
+        dateIndex: entry.dateIndex,
+        date: entry.date,
+        person,
+        product: taskContent,
+        quantity: 0,
+        unit: "",
+        convertedQuantity: null,
+        convertedUnit: "",
+        route: "",
+        note: "",
+        status,
+        confirmation: "",
+        originalLine: "",
+        originalMessage: data.originalMessage || taskContent,
+        simpleTask: true,
+        raw: data
+      }));
+    }
+  }
+
+  // 舊版資料相容：原本已拆解品項的資料仍照舊顯示。
+  const items = Array.isArray(data.items) ? data.items : [];
   const locations = Array.isArray(data.locations)
     ? data.locations
-    : (Array.isArray(data.route)
-        ? data.route
-        : (data.location ? [data.location] : []));
-
+    : (Array.isArray(data.route) ? data.route : (data.location ? [data.location] : []));
   const location = locations.join("、");
-
-  const note = [
-    data.task || "",
-    data.notes || "",
-    data.originalMessage || ""
-  ].filter(Boolean).join("\n");
-
-  const status = data.status || "待確認";
-
+  const note = [data.task || "", data.notes || "", data.originalMessage || ""]
+    .filter(Boolean).join("\n");
   const confirmation = Array.isArray(data.needsConfirmation)
-    ? data.needsConfirmation.join("、")
-    : "";
+    ? data.needsConfirmation.join("、") : "";
 
-  // 有數量的品項
   if (items.length) {
-
     return items.map((item,index) => {
-
-      const date =
-        item.date ||
-        data.date ||
-        (dates.length === 1 ? dates[0].date : "") ||
-        "";
-
+      const date = item.date || data.date || dates[0]?.dateText || dates[0]?.date || "";
       return {
-        id: `${id}__${index}`,
-        parentId: id,
-        itemIndex: index,
-
-        date,
-        person,
-        product: item.name || "未辨識品項",
-
-        quantity: Number(item.quantity || 0),
-        unit: item.unit || "",
-
-        convertedQuantity: item.convertedQuantity ?? null,
-        convertedUnit: item.convertedUnit || "",
-
-        route: location,
-        note,
-
-        status,
-        confirmation,
-
-        originalLine: item.originalLine || "",
-        originalMessage: data.originalMessage || "",
-        raw: data
+        id: `${id}__${index}`, parentId: id, itemIndex: index, date, person,
+        product: item.name || "未辨識品項", quantity: Number(item.quantity || 0),
+        unit: item.unit || "", convertedQuantity: item.convertedQuantity ?? null,
+        convertedUnit: item.convertedUnit || "", route: location, note, status,
+        confirmation, originalLine: item.originalLine || "",
+        originalMessage: data.originalMessage || "", simpleTask: false, raw: data
       };
     });
   }
 
-  // 沒有數量但有明確工作內容的任務
   if (data.task || data.item || data.namedProducts?.length) {
-
-    const date =
-      data.date ||
-      dates[0]?.date ||
-      "";
-
     return [{
-      id: `${id}__0`,
-      parentId: id,
-      itemIndex: -1,
-
-      date,
-      person,
-      product: data.item || data.namedProducts?.[0] || data.task,
-
-      quantity: Number(data.weight || 0),
-      unit: data.weight ? "kg" : "",
-
-      convertedQuantity: null,
-      convertedUnit: "",
-
-      route: location,
-      note,
-      status,
-      confirmation,
-
-      originalLine: "",
-      originalMessage: data.originalMessage || "",
-      raw: data
+      id: `${id}__0`, parentId: id, itemIndex: -1,
+      date: data.date || dates[0]?.dateText || dates[0]?.date || "",
+      person, product: data.item || data.namedProducts?.[0] || data.task,
+      quantity: Number(data.weight || 0), unit: data.weight ? "kg" : "",
+      convertedQuantity: null, convertedUnit: "", route: location, note,
+      status, confirmation, originalLine: "",
+      originalMessage: data.originalMessage || "", simpleTask: false, raw: data
     }];
   }
-
   return [];
 }
 
@@ -841,48 +791,28 @@ function normalizeDocument(id,data) {
 // ======================================================
 
 function taskHTML(t) {
-
-  const amount = t.unit
-    ? `${escapeHTML(t.quantity)} ${escapeHTML(t.unit)}`
-    : (t.quantity ? escapeHTML(t.quantity) : "數量待確認");
-
-  const converted = t.convertedQuantity !== null
-    ? `<div class="task-sub">換算：${escapeHTML(t.convertedQuantity)} ${escapeHTML(t.convertedUnit)}</div>`
-    : "";
-
-  const warning = t.confirmation
+  const amount = t.simpleTask
+    ? ""
+    : (t.unit
+        ? `${escapeHTML(t.quantity)} ${escapeHTML(t.unit)}`
+        : (t.quantity ? escapeHTML(t.quantity) : "數量待確認"));
+  const warning = t.confirmation && !t.simpleTask
     ? `<div class="task-sub" style="color:#c43c3c">⚠ ${escapeHTML(t.confirmation)}</div>`
     : "";
-
-  const sourceText = t.originalMessage
-    ? `<details class="original-message">
-         <summary>查看 LINE 原始訊息</summary>
-         ${escapeHTML(t.originalMessage)}
-       </details>`
+  const sourceText = t.originalMessage && !t.simpleTask
+    ? `<details class="original-message"><summary>查看 LINE 原始訊息</summary>${escapeHTML(t.originalMessage)}</details>`
     : "";
-
   return `
     <div class="task-row">
       <div>
-        <div class="task-name">${escapeHTML(t.product)}</div>
-        <div class="task-sub">
-          ${formatDate(t.date)} · ${escapeHTML(t.person || "未指定人員")}
-        </div>
-        ${t.route ? `<div class="task-sub">地點：${escapeHTML(t.route)}</div>` : ""}
+        <div class="task-name" style="white-space:pre-wrap;word-break:break-word">${escapeHTML(t.product)}</div>
+        <div class="task-sub">${formatDate(t.date)} · ${escapeHTML(t.person || "資材全部")}</div>
         ${warning}
-        ${converted}
         ${sourceText}
       </div>
-
       <div class="task-extra">${amount}</div>
-
       <div class="task-extra">${statusTag(t.status)}</div>
-
-      <div>
-        <button class="action-btn" data-edit-id="${escapeHTML(t.id)}">
-          編輯
-        </button>
-      </div>
+      <div><button class="action-btn" data-edit-id="${escapeHTML(t.id)}">編輯</button></div>
     </div>
   `;
 }
@@ -902,7 +832,7 @@ function renderDashboard() {
     todayTasks.length;
 
   document.getElementById("confirmCount").textContent =
-    todayTasks.filter(t => t.status === "待確認").length;
+    todayTasks.filter(t => t.status === "待處理").length;
 
   document.getElementById("activeCount").textContent =
     todayTasks.filter(t =>
@@ -940,13 +870,7 @@ function renderTasks() {
 
   const list = tasks.filter(t => {
 
-    const content = [
-      t.product,
-      t.person,
-      t.route,
-      t.note,
-      t.confirmation
-    ].join(" ").toLowerCase();
+    const content = [t.product, t.person].join(" ").toLowerCase();
 
     return (
       (!q || content.includes(q)) &&
@@ -1096,25 +1020,15 @@ function showPage(name) {
 // ======================================================
 
 function openModal(date=dateKey(today),task=null) {
-
   document.getElementById("taskForm").reset();
-
   document.getElementById("taskId").value = task?.id || "";
   document.getElementById("taskDate").value = task?.date || date;
-  document.getElementById("person").value = task?.person || "";
+  document.getElementById("person").value = task?.person || "資材全部";
   document.getElementById("product").value = task?.product || "";
-  document.getElementById("quantity").value = task?.quantity || "";
-  document.getElementById("unit").value = task?.unit || "";
-  document.getElementById("route").value = task?.route || "";
-  document.getElementById("note").value = task?.note || "";
-  document.getElementById("taskStatus").value = task?.status || "待確認";
-
-  document.getElementById("modalTitle").textContent =
-    task ? "修改派工" : "新增派工";
-
+  document.getElementById("taskStatus").value = task?.status || "待處理";
+  document.getElementById("modalTitle").textContent = task ? "修改派工" : "新增派工";
   document.getElementById("modalBg").classList.add("show");
 }
-
 function closeModal() {
   document.getElementById("modalBg").classList.remove("show");
 }
@@ -1129,178 +1043,77 @@ function editTask(id) {
 // ======================================================
 
 async function saveTask(e) {
-
   e.preventDefault();
-
   if (!auth.currentUser) {
     alert("請先登入管理者帳號");
     return;
   }
-
   const button = document.getElementById("saveButton");
   button.disabled = true;
   button.textContent = "儲存中…";
 
   const id = document.getElementById("taskId").value;
-
   const date = document.getElementById("taskDate").value;
-  const personText = document.getElementById("person").value.trim();
-  const product = document.getElementById("product").value.trim();
-
-  const quantity = Number(
-    document.getElementById("quantity").value
-  ) || 0;
-
-  const unit = document.getElementById("unit").value.trim();
-  const routeText = document.getElementById("route").value.trim();
-  const note = document.getElementById("note").value.trim();
+  const personText = document.getElementById("person").value.trim() || "資材全部";
+  const taskContent = document.getElementById("product").value.trim();
   const status = document.getElementById("taskStatus").value;
-
-  const assignees = personText
-    ? personText.split(/[、,，]/).map(s=>s.trim()).filter(Boolean)
-    : [];
-
-  const locations = routeText
-    ? routeText.split(/[、,，]/).map(s=>s.trim()).filter(Boolean)
-    : [];
+  const assignees = personText.split(/[、,，]/).map(s => s.trim()).filter(Boolean);
+  const now = new Date().toISOString();
 
   try {
-
     if (id) {
-
-      // 修改既有 LINE 派工中的單一品項
       const current = tasks.find(t => t.id === id);
-
-      if (!current) {
-        throw new Error("找不到要修改的派工資料");
-      }
-
+      if (!current) throw new Error("找不到要修改的派工資料");
       const parentId = current.parentId;
       const original = rawDocuments.get(parentId);
-
-      if (!original) {
-        throw new Error("找不到原始 Firestore 文件");
-      }
-
+      if (!original) throw new Error("找不到原始 Firestore 文件");
       const ref = doc(db,"tasks",parentId);
 
-      const items = Array.isArray(original.items)
-        ? [...original.items]
-        : [];
-
-      const newItem = {
-        name: product,
-        quantity,
-        unit: unit || null,
-        convertedQuantity: current.convertedQuantity ?? null,
-        convertedUnit: current.convertedUnit || null,
-        originalLine: `${product} ${quantity}${unit}`,
-        date,
-        dateNeedsConfirmation: false
-      };
-
-      if (
-        current.itemIndex >= 0 &&
-        current.itemIndex < items.length
-      ) {
-        // 僅修改指定品項，保留同筆訊息的其他品項
-        items[current.itemIndex] = {
-          ...items[current.itemIndex],
-          ...newItem
-        };
+      if (current.simpleTask || original.taskContent) {
+        const oldDates = Array.isArray(original.dates) ? [...original.dates] : [];
+        const index = Number.isInteger(current.dateIndex) ? current.dateIndex : 0;
+        const dateEntry = { dateText: date, source: "MANUAL_EDIT", needsConfirmation: false };
+        if (oldDates.length) oldDates[index] = { ...oldDates[index], ...dateEntry };
+        else oldDates.push(dateEntry);
+        await updateDoc(ref, {
+          taskContent,
+          originalMessage: taskContent,
+          dates: oldDates,
+          assignees: assignees.map(name => ({ name, userId: "" })),
+          status,
+          updatedAt: now
+        });
+      } else {
+        // 舊版拆解資料仍可更新狀態及人員，內容以新簡化欄位保存。
+        await updateDoc(ref, {
+          taskContent,
+          originalMessage: taskContent,
+          dates: [{ dateText: date, source: "MANUAL_EDIT", needsConfirmation: false }],
+          assignees: assignees.map(name => ({ name, userId: "" })),
+          status,
+          updatedAt: now
+        });
       }
-      else {
-        items.push(newItem);
-      }
-
-      // status 是整筆 LINE 派工共用狀態
-      await updateDoc(ref,{
-        items,
-        assignees,
-        locations,
-        notes: note,
-        status,
-        updatedAt: new Date().toISOString()
-      });
-
     } else {
-
-      // 新增手動派工
       const ref = doc(collection(db,"tasks"));
-
-      const newTask = {
-
-        isTask: true,
-
-        date,
-        dates: [{
-          date,
-          source: "手動新增",
-          originalText: date
-        }],
-
-        deadlines: [],
-        time: null,
-
-        task: "手動新增派工",
-        assignees,
-        assigneeDetails: [],
-        assigneeUserIds: [],
-
-        item: product,
-
-        items: [{
-          name: product,
-          quantity,
-          unit: unit || null,
-          convertedQuantity: null,
-          convertedUnit: null,
-          originalLine: `${product} ${quantity}${unit}`,
-          date,
-          dateNeedsConfirmation: false
-        }],
-
-        namedProducts: [product],
-
-        weight: /^(kg|公斤)$/i.test(unit) ? quantity : null,
-        quantity: `${quantity}${unit}`,
-
-        route: locations,
-        locations,
-
-        notes: note,
-        needsConfirmation: [],
-
-        summary: `${date}｜${product} ${quantity}${unit}`,
-
-        status,
-        parserType: "manual",
-        parserVersion: "1.0",
-
-        originalMessage: note,
-        originalMessageId: ref.id,
-        groupId: "",
-        senderUserId: "",
-
+      await setDoc(ref, {
+        lineMessageId: "",
         source: "MANUAL",
-
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      await setDoc(ref,newTask);
+        originalMessage: taskContent,
+        taskContent,
+        dates: [{ dateText: date, source: "MANUAL", needsConfirmation: false }],
+        assignees: assignees.map(name => ({ name, userId: "" })),
+        status,
+        groupId: "",
+        createdAt: now,
+        updatedAt: now
+      });
     }
-
     closeModal();
-
   } catch(error) {
-
     console.error("Firestore save error:",error);
-
-    alert("儲存失敗：\n" + error.message);
-
+    alert("儲存失敗：\\n" + error.message);
   } finally {
-
     button.disabled = false;
     button.textContent = "儲存工作";
   }
@@ -1363,38 +1176,50 @@ function startTasksListener() {
 }
 
 // ======================================================
-// Google 登入
+// 登入
 // ======================================================
 
-const googleProvider = new GoogleAuthProvider();
+document.getElementById("loginForm")
+  .addEventListener("submit",async e=>{
 
-googleProvider.setCustomParameters({
-  prompt: "select_account"
-});
+    e.preventDefault();
 
-document.getElementById("loginButton")
-  .addEventListener("click", async () => {
+    const email =
+      document.getElementById("loginEmail").value.trim();
 
-    const button = document.getElementById("loginButton");
-    const errorBox = document.getElementById("loginError");
+    const password =
+      document.getElementById("loginPassword").value;
+
+    const button =
+      document.getElementById("loginButton");
+
+    const errorBox =
+      document.getElementById("loginError");
 
     button.disabled = true;
-    button.textContent = "Google 登入中…";
+    button.textContent = "登入中…";
     errorBox.textContent = "";
 
     try {
-      await signInWithPopup(auth, googleProvider);
 
-    } catch (error) {
-      console.error("Google login error:", error);
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+    } catch(error) {
 
       errorBox.textContent =
         "登入失敗：" + error.message;
 
     } finally {
+
       button.disabled = false;
-      button.textContent = "使用 Google 帳號登入";
+      button.textContent = "登入";
+
     }
+
   });
 
 // ======================================================
