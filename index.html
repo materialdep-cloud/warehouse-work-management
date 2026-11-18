@@ -343,6 +343,29 @@ h1 {font-size:25px;margin:0 0 7px}
   width:100%;
   margin-top:18px;
 }
+.login-card .google-login {
+  margin-top:12px;
+  background:#fff;
+  color:#303846;
+  border:1px solid #d8dee8;
+}
+.login-card .google-login:hover {
+  background:#f7f9fc;
+}
+.login-divider {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:16px 0 2px;
+  color:#9aa3b1;
+  font-size:12px;
+}
+.login-divider::before,.login-divider::after {
+  content:"";
+  flex:1;
+  height:1px;
+  background:#e8edf3;
+}
 .login-error {
   color:#c43c3c;
   font-size:12px;
@@ -413,7 +436,13 @@ h1 {font-size:25px;margin:0 0 7px}
            autocomplete="current-password" required>
 
     <button class="primary" id="loginButton" type="submit">
-      登入
+      電子郵件登入
+    </button>
+
+    <div class="login-divider">或</div>
+
+    <button class="google-login" id="googleLoginButton" type="button">
+      使用 Google 帳號登入
     </button>
 
     <div class="login-error" id="loginError"></div>
@@ -631,6 +660,8 @@ import { initializeApp }
 import {
   getAuth,
   signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
@@ -1234,7 +1265,61 @@ function startTasksListener() {
 }
 
 // ======================================================
-// 登入
+// Google 登入
+// ======================================================
+
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: "select_account"
+});
+
+document.getElementById("googleLoginButton")
+  .addEventListener("click", async () => {
+
+    const button =
+      document.getElementById("googleLoginButton");
+
+    const errorBox =
+      document.getElementById("loginError");
+
+    button.disabled = true;
+    button.textContent = "Google 登入中…";
+    errorBox.textContent = "";
+
+    try {
+
+      await signInWithPopup(auth, googleProvider);
+
+    } catch (error) {
+
+      console.error("Google 登入失敗：", error);
+
+      const messages = {
+        "auth/popup-closed-by-user":
+          "登入視窗已關閉，請重新登入。",
+        "auth/popup-blocked":
+          "瀏覽器封鎖了登入視窗，請允許此網站開啟彈出視窗後再試。",
+        "auth/unauthorized-domain":
+          "此網站網域尚未加入 Firebase 授權網域，請至 Firebase Authentication 設定加入目前網址的網域。",
+        "auth/operation-not-allowed":
+          "Firebase 尚未啟用 Google 登入，請至 Authentication 的登入方式啟用 Google。"
+      };
+
+      errorBox.textContent =
+        messages[error.code] ||
+        "Google 登入失敗：" + error.message;
+
+    } finally {
+
+      button.disabled = false;
+      button.textContent = "使用 Google 帳號登入";
+
+    }
+
+  });
+
+// ======================================================
+// 電子郵件／密碼登入
 // ======================================================
 
 document.getElementById("loginForm")
@@ -1274,7 +1359,7 @@ document.getElementById("loginForm")
     } finally {
 
       button.disabled = false;
-      button.textContent = "登入";
+      button.textContent = "電子郵件登入";
 
     }
 
