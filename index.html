@@ -146,8 +146,20 @@ h1 {font-size:25px;margin:0 0 7px}
   padding:10px 13px;
   min-width:0;
 }
-.task-assignee-label {font-size:10px;color:#5870a8;font-weight:bold;letter-spacing:1px;margin-bottom:4px}
-.task-assignee-name {font-size:17px;font-weight:800;color:#2449a8;line-height:1.35;word-break:break-word}
+.task-assignee-label {
+  font-size:10px;
+  color:#5870a8;
+  font-weight:bold;
+  letter-spacing:1px;
+  margin-bottom:4px;
+}
+.task-assignee-name {
+  font-size:17px;
+  font-weight:800;
+  color:#2449a8;
+  line-height:1.35;
+  word-break:break-word;
+}
 .delete-btn {
   border:1px solid #f1caca;
   background:#fff5f5;
@@ -158,6 +170,24 @@ h1 {font-size:25px;margin:0 0 7px}
   font-weight:bold;
 }
 .delete-btn:hover {background:#ffe8e8}
+
+/* 新增：直接完成按鈕 */
+.complete-btn {
+  border:1px solid #b7e4c7;
+  background:#e8f7ed;
+  color:#21834c;
+  border-radius:7px;
+  padding:7px 10px;
+  font-size:12px;
+  font-weight:bold;
+  white-space:nowrap;
+}
+.complete-btn:hover {background:#d2f0dc}
+.complete-btn:disabled {
+  opacity:.5;
+  cursor:not-allowed;
+}
+
 .task-sub {
   font-size:12px;
   color:var(--muted);
@@ -386,6 +416,7 @@ h1 {font-size:25px;margin:0 0 7px}
   white-space:pre-wrap;
   word-break:break-word;
 }
+
 @media(max-width:850px) {
   .sidebar {width:65px;padding:20px 7px}
   .brand {
@@ -404,11 +435,21 @@ h1 {font-size:25px;margin:0 0 7px}
     align-items:flex-start;
     flex-direction:column;
   }
-  .task-row {grid-template-columns:1fr 1fr;align-items:start}
+  .task-row {
+    grid-template-columns:1fr 1fr;
+    align-items:start;
+  }
   .task-row > :first-child {grid-column:1/-1}
   .task-row .task-assignee {grid-column:1/-1}
   .task-row .task-extra {grid-column:auto}
-  .task-row .task-actions {grid-column:1/-1;display:flex;gap:14px;justify-content:flex-end}
+  .task-row .task-actions {
+    grid-column:1/-1;
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+    align-items:center;
+  }
   .task-assignee-name {font-size:18px}
   .day {min-height:75px;padding:5px}
   .day-task {font-size:9px;padding:3px}
@@ -765,7 +806,7 @@ function normalizeDocument(id,data) {
     data.taskContent || data.originalMessage || data.task || data.item || ""
   ).trim();
 
-  // Worker 2.5 簡化格式：只要有工作內容及日期，就直接顯示，不進人工確認佇列。
+  // Worker 2.5 簡化格式
   if (taskContent) {
     const dateEntries = dates
       .map((d, index) => ({
@@ -773,6 +814,7 @@ function normalizeDocument(id,data) {
         dateIndex: index
       }))
       .filter(d => d.date);
+
     if (!dateEntries.length && data.date) {
       dateEntries.push({ date: data.date, dateIndex: 0 });
     }
@@ -802,7 +844,7 @@ function normalizeDocument(id,data) {
     }
   }
 
-  // 舊版資料相容：原本已拆解品項的資料仍照舊顯示。
+  // 舊版資料相容
   const items = Array.isArray(data.items) ? data.items : [];
   const locations = Array.isArray(data.locations)
     ? data.locations
@@ -838,6 +880,7 @@ function normalizeDocument(id,data) {
       originalMessage: data.originalMessage || "", simpleTask: false, raw: data
     }];
   }
+
   return [];
 }
 
@@ -846,35 +889,52 @@ function normalizeDocument(id,data) {
 // ======================================================
 
 function taskHTML(t) {
+
   const amount = t.simpleTask
     ? ""
     : (t.unit
         ? `${escapeHTML(t.quantity)} ${escapeHTML(t.unit)}`
         : (t.quantity ? escapeHTML(t.quantity) : "數量待確認"));
+
   const warning = t.confirmation && !t.simpleTask
     ? `<div class="task-sub" style="color:#c43c3c">⚠ ${escapeHTML(t.confirmation)}</div>`
     : "";
+
   const sourceText = t.originalMessage && !t.simpleTask
     ? `<details class="original-message"><summary>查看 LINE 原始訊息</summary>${escapeHTML(t.originalMessage)}</details>`
     : "";
+
+  // 已完成或已取消，不再顯示完成按鈕
+  const completeButton =
+    !["已完成","已取消"].includes(t.status)
+      ? `<button class="complete-btn" data-complete-id="${escapeHTML(t.id)}">✓ 完成</button>`
+      : "";
+
   return `
     <div class="task-row">
+
       <div>
         <div class="task-name" style="white-space:pre-wrap;word-break:break-word">${escapeHTML(t.product)}</div>
         <div class="task-sub">${formatDate(t.date)}</div>
         ${warning}
         ${sourceText}
       </div>
+
       <div class="task-assignee">
         <div class="task-assignee-label">負責人</div>
         <div class="task-assignee-name">${escapeHTML(t.person || "資材全部")}</div>
       </div>
+
       <div class="task-extra">${amount}</div>
+
       <div class="task-extra">${statusTag(t.status)}</div>
+
       <div class="task-actions">
+        ${completeButton}
         <button class="action-btn" data-edit-id="${escapeHTML(t.id)}">編輯</button>
         <button class="delete-btn" data-delete-id="${escapeHTML(t.id)}">刪除</button>
       </div>
+
     </div>
   `;
 }
@@ -1082,6 +1142,7 @@ function showPage(name) {
 // ======================================================
 
 function openModal(date=dateKey(today),task=null) {
+
   document.getElementById("taskForm").reset();
   document.getElementById("taskId").value = task?.id || "";
   document.getElementById("taskDate").value = task?.date || date;
@@ -1091,6 +1152,7 @@ function openModal(date=dateKey(today),task=null) {
   document.getElementById("modalTitle").textContent = task ? "修改派工" : "新增派工";
   document.getElementById("modalBg").classList.add("show");
 }
+
 function closeModal() {
   document.getElementById("modalBg").classList.remove("show");
 }
@@ -1101,30 +1163,97 @@ function editTask(id) {
 }
 
 // ======================================================
-// 刪除工作（LINE 同一則訊息若拆成多個日期，會整筆刪除）
+// 刪除工作
 // ======================================================
 
 async function deleteTask(id) {
+
   if (!auth.currentUser) {
     alert("請先登入管理者帳號");
     return;
   }
+
   const task = tasks.find(t => t.id === id);
+
   if (!task) {
     alert("找不到要刪除的工作");
     return;
   }
+
   const parentId = task.parentId || id;
+
   const message = task.simpleTask
     ? "這筆工作可能包含同一則 LINE 訊息中的多個日期。\n確定要刪除整則訊息所建立的所有工作嗎？此操作無法復原。"
     : "確定要刪除這筆工作嗎？此操作無法復原。";
+
   if (!window.confirm(message)) return;
+
   try {
+
     await deleteDoc(doc(db,"tasks",parentId));
+
   } catch(error) {
+
     console.error("Firestore delete error:",error);
     alert("刪除失敗：\n" + error.message);
+
   }
+}
+
+// ======================================================
+// 新增：直接完成派工
+// ======================================================
+
+async function completeTask(id,button) {
+
+  if (!auth.currentUser) {
+    alert("請先登入管理者帳號");
+    return;
+  }
+
+  const task = tasks.find(t => t.id === id);
+
+  if (!task) {
+    alert("找不到這筆派工資料");
+    return;
+  }
+
+  if (["已完成","已取消"].includes(task.status)) {
+    return;
+  }
+
+  const parentId = task.parentId || id;
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "更新中...";
+  }
+
+  try {
+
+    await updateDoc(
+      doc(db,"tasks",parentId),
+      {
+        status: "已完成",
+        updatedAt: new Date().toISOString()
+      }
+    );
+
+    // 由 Firestore onSnapshot 自動刷新畫面
+
+  } catch(error) {
+
+    console.error("完成派工失敗：",error);
+
+    alert("更新完成狀態失敗：\n" + error.message);
+
+    if (button) {
+      button.disabled = false;
+      button.textContent = "✓ 完成";
+    }
+
+  }
+
 }
 
 // ======================================================
@@ -1132,11 +1261,14 @@ async function deleteTask(id) {
 // ======================================================
 
 async function saveTask(e) {
+
   e.preventDefault();
+
   if (!auth.currentUser) {
     alert("請先登入管理者帳號");
     return;
   }
+
   const button = document.getElementById("saveButton");
   button.disabled = true;
   button.textContent = "儲存中…";
@@ -1150,20 +1282,37 @@ async function saveTask(e) {
   const now = new Date().toISOString();
 
   try {
+
     if (id) {
+
       const current = tasks.find(t => t.id === id);
+
       if (!current) throw new Error("找不到要修改的派工資料");
+
       const parentId = current.parentId;
       const original = rawDocuments.get(parentId);
+
       if (!original) throw new Error("找不到原始 Firestore 文件");
+
       const ref = doc(db,"tasks",parentId);
 
       if (current.simpleTask || original.taskContent) {
+
         const oldDates = Array.isArray(original.dates) ? [...original.dates] : [];
         const index = Number.isInteger(current.dateIndex) ? current.dateIndex : 0;
-        const dateEntry = { dateText: date, source: "MANUAL_EDIT", needsConfirmation: false };
-        if (oldDates.length) oldDates[index] = { ...oldDates[index], ...dateEntry };
-        else oldDates.push(dateEntry);
+
+        const dateEntry = {
+          dateText: date,
+          source: "MANUAL_EDIT",
+          needsConfirmation: false
+        };
+
+        if (oldDates.length) {
+          oldDates[index] = { ...oldDates[index], ...dateEntry };
+        } else {
+          oldDates.push(dateEntry);
+        }
+
         await updateDoc(ref, {
           taskContent,
           originalMessage: taskContent,
@@ -1172,8 +1321,9 @@ async function saveTask(e) {
           status,
           updatedAt: now
         });
+
       } else {
-        // 舊版拆解資料仍可更新狀態及人員，內容以新簡化欄位保存。
+
         await updateDoc(ref, {
           taskContent,
           originalMessage: taskContent,
@@ -1182,9 +1332,13 @@ async function saveTask(e) {
           status,
           updatedAt: now
         });
+
       }
+
     } else {
+
       const ref = doc(collection(db,"tasks"));
+
       await setDoc(ref, {
         lineMessageId: "",
         source: "MANUAL",
@@ -1197,14 +1351,21 @@ async function saveTask(e) {
         createdAt: now,
         updatedAt: now
       });
+
     }
+
     closeModal();
+
   } catch(error) {
+
     console.error("Firestore save error:",error);
-    alert("儲存失敗：\\n" + error.message);
+    alert("儲存失敗：\n" + error.message);
+
   } finally {
+
     button.disabled = false;
     button.textContent = "儲存工作";
+
   }
 }
 
@@ -1269,6 +1430,7 @@ function startTasksListener() {
 // ======================================================
 
 const googleProvider = new GoogleAuthProvider();
+
 googleProvider.setCustomParameters({
   prompt: "select_account"
 });
@@ -1440,21 +1602,40 @@ document.getElementById("modalBg")
 
   });
 
-// 編輯按鈕：使用事件代理
+// ======================================================
+// 事件代理：完成、編輯、刪除、月曆
+// ======================================================
+
 document.addEventListener("click",e=>{
 
+  // 直接完成派工
+  const completeButton = e.target.closest("[data-complete-id]");
+
+  if (completeButton) {
+    completeTask(
+      completeButton.dataset.completeId,
+      completeButton
+    );
+    return;
+  }
+
+  // 刪除派工
   const deleteButton = e.target.closest("[data-delete-id]");
+
   if (deleteButton) {
     deleteTask(deleteButton.dataset.deleteId);
     return;
   }
 
+  // 編輯派工
   const editButton = e.target.closest("[data-edit-id]");
+
   if (editButton) {
     editTask(editButton.dataset.editId);
     return;
   }
 
+  // 月曆選擇日期
   const day = e.target.closest("[data-select-date]");
 
   if (day) {
