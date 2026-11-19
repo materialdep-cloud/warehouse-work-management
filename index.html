@@ -510,8 +510,12 @@ h1 {font-size:25px;margin:0 0 7px}
       📋 <span class="nav-text">工作管理</span>
     </button>
 
+    <button class="nav-btn" data-page="completed">
+      ✅ <span class="nav-text">已完成工作</span>
+    </button>
+
     <div class="sidebar-foot">
-      版本 V2.0<br>
+      版本 V2.1<br>
       Firebase 雲端同步
     </div>
   </aside>
@@ -644,8 +648,22 @@ h1 {font-size:25px;margin:0 0 7px}
       </div>
     </section>
 
+    <!-- 已完成工作 -->
+    <section class="page" id="completed">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>✅ 已完成工作</h2>
+        </div>
+        <div class="toolbar">
+          <input id="completedSearch" placeholder="搜尋已完成事項或人員..." oninput="renderCompletedTasks()">
+          <input id="completedDateFilter" type="date" onchange="renderCompletedTasks()">
+        </div>
+        <div id="completedTasks"></div>
+      </div>
+    </section>
+
     <div class="footer-note">
-      倉庫智慧派工管理系統 · V2.0 · Firebase 雲端同步
+      倉庫智慧派工管理系統 · V2.1 · Firebase 雲端同步
     </div>
 
   </main>
@@ -801,22 +819,23 @@ function normalizeDocument(id,data) {
     ? data.assignees.map(p => typeof p === "string" ? p : (p?.name || "")).filter(Boolean)
     : [];
   const person = assignees.join("、") || "資材全部";
-  const status = data.status || "待處理";
+  const legacyStatus = data.status || "待處理";
   const taskContent = String(
     data.taskContent || data.originalMessage || data.task || data.item || ""
   ).trim();
 
-  // Worker 2.5 簡化格式
+  // Worker 簡化格式：每個日期優先讀自己的 status，舊資料才回退到文件 status
   if (taskContent) {
     const dateEntries = dates
       .map((d, index) => ({
         date: d?.dateText || d?.date || "",
-        dateIndex: index
+        dateIndex: index,
+        status: d?.status || legacyStatus
       }))
       .filter(d => d.date);
 
     if (!dateEntries.length && data.date) {
-      dateEntries.push({ date: data.date, dateIndex: 0 });
+      dateEntries.push({ date: data.date, dateIndex: 0, status: legacyStatus });
     }
 
     if (dateEntries.length) {
@@ -834,7 +853,7 @@ function normalizeDocument(id,data) {
         convertedUnit: "",
         route: "",
         note: "",
-        status,
+        status: entry.status,
         confirmation: "",
         originalLine: "",
         originalMessage: data.originalMessage || taskContent,
@@ -844,7 +863,7 @@ function normalizeDocument(id,data) {
     }
   }
 
-  // 舊版資料相容
+  // 舊版資料相容：若 item 本身有 status，優先使用 item.status
   const items = Array.isArray(data.items) ? data.items : [];
   const locations = Array.isArray(data.locations)
     ? data.locations
@@ -862,7 +881,8 @@ function normalizeDocument(id,data) {
         id: `${id}__${index}`, parentId: id, itemIndex: index, date, person,
         product: item.name || "未辨識品項", quantity: Number(item.quantity || 0),
         unit: item.unit || "", convertedQuantity: item.convertedQuantity ?? null,
-        convertedUnit: item.convertedUnit || "", route: location, note, status,
+        convertedUnit: item.convertedUnit || "", route: location, note,
+        status: item.status || legacyStatus,
         confirmation, originalLine: item.originalLine || "",
         originalMessage: data.originalMessage || "", simpleTask: false, raw: data
       };
@@ -876,7 +896,7 @@ function normalizeDocument(id,data) {
       person, product: data.item || data.namedProducts?.[0] || data.task,
       quantity: Number(data.weight || 0), unit: data.weight ? "kg" : "",
       convertedQuantity: null, convertedUnit: "", route: location, note,
-      status, confirmation, originalLine: "",
+      status: dates[0]?.status || legacyStatus, confirmation, originalLine: "",
       originalMessage: data.originalMessage || "", simpleTask: false, raw: data
     }];
   }
@@ -1009,6 +1029,27 @@ function renderTasks() {
 }
 
 // ======================================================
+// 已完成工作專區
+// ======================================================
+
+function renderCompletedTasks() {
+  const searchEl = document.getElementById("completedSearch");
+  const dateEl = document.getElementById("completedDateFilter");
+  const q = (searchEl?.value || "").trim().toLowerCase();
+  const dt = dateEl?.value || "";
+
+  const list = tasks.filter(t => {
+    const content = [t.product, t.person].join(" ").toLowerCase();
+    return t.status === "已完成" && (!q || content.includes(q)) && (!dt || t.date === dt);
+  }).sort((a,b) => (b.date || "").localeCompare(a.date || ""));
+
+  const target = document.getElementById("completedTasks");
+  if (target) target.innerHTML = list.length
+    ? list.map(taskHTML).join("")
+    : '<div class="empty">目前沒有符合條件的已完成工作</div>';
+}
+
+// ======================================================
 // 月曆
 // ======================================================
 
@@ -1130,11 +1171,13 @@ function showPage(name) {
   document.getElementById("pageTitle").textContent = {
     dashboard:"工作儀表板",
     calendar:"工作月曆",
-    tasks:"工作管理"
+    tasks:"工作管理",
+    completed:"已完成工作"
   }[name];
 
   if (name==="calendar") renderCalendar();
   if (name==="tasks") renderTasks();
+  if (name==="completed") renderCompletedTasks();
 }
 
 // ======================================================
@@ -1205,24 +1248,24 @@ async function deleteTask(id) {
 // ======================================================
 
 async function completeTask(id,button) {
-
   if (!auth.currentUser) {
     alert("請先登入管理者帳號");
     return;
   }
 
   const task = tasks.find(t => t.id === id);
-
   if (!task) {
     alert("找不到這筆派工資料");
     return;
   }
-
-  if (["已完成","已取消"].includes(task.status)) {
-    return;
-  }
+  if (["已完成","已取消"].includes(task.status)) return;
 
   const parentId = task.parentId || id;
+  const original = rawDocuments.get(parentId);
+  if (!original) {
+    alert("找不到原始 Firestore 文件，請重新整理後再試");
+    return;
+  }
 
   if (button) {
     button.disabled = true;
@@ -1230,30 +1273,57 @@ async function completeTask(id,button) {
   }
 
   try {
+    const ref = doc(db,"tasks",parentId);
+    const now = new Date().toISOString();
 
-    await updateDoc(
-      doc(db,"tasks",parentId),
-      {
-        status: "已完成",
-        updatedAt: new Date().toISOString()
+    if (task.simpleTask || (original.taskContent && !Array.isArray(original.items))) {
+      // 將舊文件的 top-level status 先補到每個日期，避免更新後其他日期被誤判
+      const oldDates = Array.isArray(original.dates) ? original.dates : [];
+      const dates = oldDates.map(entry => ({
+        ...entry,
+        status: entry?.status || original.status || "待處理"
+      }));
+
+      let index = Number.isInteger(task.dateIndex) ? task.dateIndex : 0;
+      if (!dates[index]) {
+        dates[index] = {
+          dateText: task.date || "",
+          source: "MANUAL",
+          needsConfirmation: false,
+          status: "待處理"
+        };
       }
-    );
+      dates[index] = { ...dates[index], status: "已完成" };
 
-    // 由 Firestore onSnapshot 自動刷新畫面
+      await updateDoc(ref, { dates, updatedAt: now });
 
+    } else if (Array.isArray(original.items) && task.itemIndex >= 0) {
+      const items = original.items.map(item => ({
+        ...item,
+        status: item?.status || original.status || "待處理"
+      }));
+      items[task.itemIndex] = { ...items[task.itemIndex], status: "已完成" };
+      await updateDoc(ref, { items, updatedAt: now });
+
+    } else {
+      // 舊版單筆文件轉為日期狀態；保留原本其他欄位
+      const dates = Array.isArray(original.dates) ? [...original.dates] : [];
+      const index = Number.isInteger(task.dateIndex) ? task.dateIndex : 0;
+      if (dates[index]) {
+        dates[index] = { ...dates[index], status: "已完成" };
+      } else {
+        dates.push({ dateText: task.date || "", source: "LEGACY_MIGRATION", status: "已完成" });
+      }
+      await updateDoc(ref, { dates, updatedAt: now });
+    }
   } catch(error) {
-
     console.error("完成派工失敗：",error);
-
     alert("更新完成狀態失敗：\n" + error.message);
-
     if (button) {
       button.disabled = false;
       button.textContent = "✓ 完成";
     }
-
   }
-
 }
 
 // ======================================================
@@ -1261,9 +1331,7 @@ async function completeTask(id,button) {
 // ======================================================
 
 async function saveTask(e) {
-
   e.preventDefault();
-
   if (!auth.currentUser) {
     alert("請先登入管理者帳號");
     return;
@@ -1282,90 +1350,91 @@ async function saveTask(e) {
   const now = new Date().toISOString();
 
   try {
-
     if (id) {
-
       const current = tasks.find(t => t.id === id);
-
       if (!current) throw new Error("找不到要修改的派工資料");
-
       const parentId = current.parentId;
       const original = rawDocuments.get(parentId);
-
       if (!original) throw new Error("找不到原始 Firestore 文件");
-
       const ref = doc(db,"tasks",parentId);
 
-      if (current.simpleTask || original.taskContent) {
-
-        const oldDates = Array.isArray(original.dates) ? [...original.dates] : [];
+      if (current.simpleTask || (original.taskContent && !Array.isArray(original.items))) {
+        const oldDates = Array.isArray(original.dates) ? original.dates : [];
+        const dates = oldDates.map(entry => ({
+          ...entry,
+          status: entry?.status || original.status || "待處理"
+        }));
         const index = Number.isInteger(current.dateIndex) ? current.dateIndex : 0;
-
-        const dateEntry = {
+        const existing = dates[index] || {};
+        dates[index] = {
+          ...existing,
           dateText: date,
           source: "MANUAL_EDIT",
-          needsConfirmation: false
+          needsConfirmation: false,
+          status
         };
-
-        if (oldDates.length) {
-          oldDates[index] = { ...oldDates[index], ...dateEntry };
-        } else {
-          oldDates.push(dateEntry);
-        }
 
         await updateDoc(ref, {
           taskContent,
           originalMessage: taskContent,
-          dates: oldDates,
+          dates,
           assignees: assignees.map(name => ({ name, userId: "" })),
-          status,
+          updatedAt: now
+        });
+
+      } else if (Array.isArray(original.items) && current.itemIndex >= 0) {
+        const items = original.items.map(item => ({
+          ...item,
+          status: item?.status || original.status || "待處理"
+        }));
+        items[current.itemIndex] = { ...items[current.itemIndex], status };
+        await updateDoc(ref, {
+          items,
+          assignees: assignees.map(name => ({ name, userId: "" })),
           updatedAt: now
         });
 
       } else {
-
+        const dates = Array.isArray(original.dates) ? [...original.dates] : [];
+        const index = Number.isInteger(current.dateIndex) ? current.dateIndex : 0;
+        dates[index] = {
+          ...(dates[index] || {}),
+          dateText: date,
+          source: "MANUAL_EDIT",
+          needsConfirmation: false,
+          status
+        };
         await updateDoc(ref, {
           taskContent,
           originalMessage: taskContent,
-          dates: [{ dateText: date, source: "MANUAL_EDIT", needsConfirmation: false }],
+          dates,
           assignees: assignees.map(name => ({ name, userId: "" })),
-          status,
           updatedAt: now
         });
-
       }
 
     } else {
-
       const ref = doc(collection(db,"tasks"));
-
       await setDoc(ref, {
         lineMessageId: "",
         source: "MANUAL",
         originalMessage: taskContent,
         taskContent,
-        dates: [{ dateText: date, source: "MANUAL", needsConfirmation: false }],
+        dates: [{ dateText: date, source: "MANUAL", needsConfirmation: false, status }],
         assignees: assignees.map(name => ({ name, userId: "" })),
         status,
         groupId: "",
         createdAt: now,
         updatedAt: now
       });
-
     }
-
     closeModal();
-
   } catch(error) {
-
     console.error("Firestore save error:",error);
     alert("儲存失敗：\n" + error.message);
-
   } finally {
-
     button.disabled = false;
     button.textContent = "儲存工作";
-
   }
 }
 
@@ -1660,6 +1729,7 @@ function refresh() {
   renderDashboard();
   renderTasks();
   renderCalendar();
+  renderCompletedTasks();
 }
 
 Object.assign(window,{
