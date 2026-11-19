@@ -563,11 +563,6 @@ h1 {font-size:25px;margin:0 0 7px}
           <div class="stat-note">尚未完成工作</div>
         </div>
 
-        <div class="stat">
-          <div class="stat-label">已完成</div>
-          <div class="stat-number" id="doneCount">0</div>
-          <div class="stat-note">今日完成工作</div>
-        </div>
       </div>
 
       <div class="panel">
@@ -965,9 +960,10 @@ function taskHTML(t) {
 
 function renderDashboard() {
 
+  // 儀表板只顯示尚未完成的工作；已完成工作請至「已完成工作」頁面查看
   const todayTasks = tasks.filter(t =>
     t.date === dateKey(today) &&
-    t.status !== "已取消"
+    !["已完成", "已取消"].includes(t.status)
   );
 
   document.getElementById("todayCount").textContent =
@@ -981,16 +977,13 @@ function renderDashboard() {
       ["待處理","進行中"].includes(t.status)
     ).length;
 
-  document.getElementById("doneCount").textContent =
-    todayTasks.filter(t => t.status === "已完成").length;
-
   document.getElementById("todayTasks").innerHTML =
     todayTasks.length
       ? todayTasks.map(taskHTML).join("")
       : '<div class="empty">今天沒有派工</div>';
 
   const upcoming = tasks
-    .filter(t => t.date > dateKey(today) && t.status !== "已取消")
+    .filter(t => t.date > dateKey(today) && !["已完成", "已取消"].includes(t.status))
     .sort((a,b) => a.date.localeCompare(b.date))
     .slice(0,6);
 
